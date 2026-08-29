@@ -12,10 +12,7 @@ $videoId = isset($_GET['v']) ? COM_applyFilter($_GET['v']) : '';
 if (!Videos_Validator::youtubeVideoId($videoId)) {
     echo COM_createHTMLDocument(
         COM_showMessageText('Vidéo invalide.', '', true),
-        array(
-            'pagetitle' => $publicTitle,
-            'headercode' => $seo->unavailableVideo($videoId)
-        )
+        array('pagetitle' => $publicTitle, 'headercode' => $seo->unavailableVideo($videoId))
     );
     exit;
 }
@@ -25,40 +22,30 @@ $cache = new Videos_Cache($bootstrap->getStore());
 $moderation = new Videos_Moderation($bootstrap->getStore());
 $knownUnavailable = $cache->isVideoUnavailable($videoId);
 $video = $cache->getVideo($videoId, true);
-$videoChannelId = is_array($video) &&
-    isset($video['snippet']['channelId'])
+$videoChannelId = is_array($video) && isset($video['snippet']['channelId'])
     ? (string) $video['snippet']['channelId'] : '';
-if ($knownUnavailable ||
-    $moderation->isVideoBlocked($videoId) ||
-    $moderation->isChannelExcluded($videoChannelId) ||
-    $video === false) {
+if ($knownUnavailable || $moderation->isVideoBlocked($videoId) ||
+    $moderation->isChannelExcluded($videoChannelId) || $video === false) {
     echo COM_createHTMLDocument(
         COM_showMessageText('Cette vidéo n’est plus disponible.', '', true),
-        array(
-            'pagetitle' => $publicTitle,
-            'headercode' => $seo->unavailableVideo($videoId)
-        )
+        array('pagetitle' => $publicTitle, 'headercode' => $seo->unavailableVideo($videoId))
     );
     exit;
 }
 
 $snippet = isset($video['snippet']) ? $video['snippet'] : array();
 $title = isset($snippet['title']) ? $snippet['title'] : $videoId;
-$channelTitle = isset($snippet['channelTitle'])
-    ? $snippet['channelTitle'] : '';
+$channelTitle = isset($snippet['channelTitle']) ? $snippet['channelTitle'] : '';
 $descriptionService = new Videos_Description();
 $description = $descriptionService->excerpt(
     isset($snippet['description']) ? $snippet['description'] : '',
-    isset($_VIDEOS_CONF['description_mode'])
-        ? $_VIDEOS_CONF['description_mode'] : 'clean'
+    isset($_VIDEOS_CONF['description_mode']) ? $_VIDEOS_CONF['description_mode'] : 'clean'
 );
 $localUrl = $_CONF['site_url'] . '/videos/watch.php?v=' . rawurlencode($videoId);
 $embedHost = !empty($_VIDEOS_CONF['privacy_enhanced_embed'])
-    ? 'https://www.youtube-nocookie.com'
-    : 'https://www.youtube.com';
+    ? 'https://www.youtube-nocookie.com' : 'https://www.youtube.com';
 $autoplay = !empty($_VIDEOS_CONF['autoplay']) ? '1' : '0';
-$playerMode = isset($_VIDEOS_CONF['youtube_player_mode']) &&
-    $_VIDEOS_CONF['youtube_player_mode'] === 'minimal'
+$playerMode = isset($_VIDEOS_CONF['youtube_player_mode']) && $_VIDEOS_CONF['youtube_player_mode'] === 'minimal'
     ? 'minimal' : 'standard';
 $playerControls = $playerMode === 'minimal' ? '0' : '1';
 $playerFullscreen = $playerMode === 'minimal' ? '0' : '1';
@@ -66,61 +53,31 @@ $embedUrl = $embedHost . '/embed/' . rawurlencode($videoId)
     . '?autoplay=' . $autoplay
     . '&rel=0&enablejsapi=1&playsinline=1&iv_load_policy=3'
     . '&controls=' . $playerControls . '&fs=' . $playerFullscreen
-    . '&origin='
-    . rawurlencode($_CONF['site_url']);
-$seoHeader = $seo->video(
-    $videoId,
-    $video,
-    $description,
-    $embedHost . '/embed/' . rawurlencode($videoId)
-);
-$duration = isset($video['videos_duration_seconds'])
-    ? (int) $video['videos_duration_seconds'] : 0;
-$csrfToken = SEC_createToken();
+    . '&origin=' . rawurlencode($_CONF['site_url']);
+$seoHeader = $seo->video($videoId, $video, $description, $embedHost . '/embed/' . rawurlencode($videoId));
+$duration = isset($video['videos_duration_seconds']) ? (int) $video['videos_duration_seconds'] : 0;
 $ratingStatsService = new Videos_RatingStats($bootstrap->getStore());
 $ratingStats = $ratingStatsService->get($videoId);
 $faqService = new Videos_Faq($LANG_VIDEOS_FAQ, $_VIDEOS_CONF);
-$faqItems = !empty($_VIDEOS_CONF['faq_video_enabled'])
-    ? $faqService->video($video, $ratingStats) : array();
+$faqItems = !empty($_VIDEOS_CONF['faq_video_enabled']) ? $faqService->video($video, $ratingStats) : array();
 $seoHeader .= $faqService->structuredData($faqItems);
-$contextKey = isset($_GET['c']) &&
-    preg_match('/^[a-f0-9]{64}$/', $_GET['c'])
-    ? $_GET['c'] : '';
+$contextKey = isset($_GET['c']) && preg_match('/^[a-f0-9]{64}$/', $_GET['c']) ? $_GET['c'] : '';
 $videoStats = new Videos_VideoStats($bootstrap->getStore());
-$ranking = new Videos_Ranking(
-    $bootstrap->getStore(),
-    $ratingStatsService,
-    $videoStats,
-    $cache
-);
-$privacy = new Videos_Privacy(
-    $bootstrap->getStore(),
-    $bootstrap->getSecret()
-);
-$selector = new Videos_CatalogueSelector(
-    $ratingStatsService,
-    $privacy,
-    $ranking
-);
+$ranking = new Videos_Ranking($bootstrap->getStore(), $ratingStatsService, $videoStats, $cache);
+$privacy = new Videos_Privacy($bootstrap->getStore(), $bootstrap->getSecret());
+$selector = new Videos_CatalogueSelector($ratingStatsService, $privacy, $ranking);
 $recommendation = new Videos_Recommendation($cache, $selector, $ranking);
 $uid = isset($_USER['uid']) ? (int) $_USER['uid'] : 1;
 $visitor = new Videos_Visitor($privacy, $uid);
-$ratingService = new Videos_RatingService(
-    $bootstrap->getStore(),
-    $privacy
-);
+$ratingService = new Videos_RatingService($bootstrap->getStore(), $privacy);
 $personalRating = $ratingService->getRating($visitor, $videoId);
 if (!is_int($personalRating)) {
     $personalRating = 0;
 }
 $anonymousViewed = array();
-if (!Videos_Validator::accountUid($uid) &&
-    !empty($_VIDEOS_CONF['anonymous_tracking_enabled']) &&
+if (!Videos_Validator::accountUid($uid) && !empty($_VIDEOS_CONF['anonymous_tracking_enabled']) &&
     isset($_COOKIE[Videos_Visitor::COOKIE_NAME])) {
-    $anonymousViewed = $privacy->anonymousViewedVideoIds(
-        $_COOKIE[Videos_Visitor::COOKIE_NAME],
-        2
-    );
+    $anonymousViewed = $privacy->anonymousViewedVideoIds($_COOKIE[Videos_Visitor::COOKIE_NAME], 2);
 }
 $nextVideos = $recommendation->nextVideos(
     $videoId,
@@ -129,11 +86,59 @@ $nextVideos = $recommendation->nextVideos(
     !empty($_VIDEOS_CONF['account_history_enabled']) ? $uid : 1,
     $anonymousViewed
 );
+$permanentPool = new Videos_PermanentPool($bootstrap->getStore(), $cache);
+$curationMessage = '';
+if ($_SERVER['REQUEST_METHOD'] === 'POST' &&
+    SEC_hasRights('videos.moderate') &&
+    isset($_POST['videos_curation_action'])) {
+    $curationAction = COM_applyFilter($_POST['videos_curation_action']);
+    $curationExpires = isset($_POST['videos_curation_expires'])
+        ? (int) $_POST['videos_curation_expires'] : 0;
+    $curationProof = isset($_POST['videos_curation_proof'])
+        ? (string) $_POST['videos_curation_proof'] : '';
+    $expectedProof = videos_watch_curation_proof(
+        $videoId,
+        $curationAction,
+        $curationExpires,
+        $uid,
+        $bootstrap->getSecret()
+    );
+    $proofValid = $curationExpires >= time()
+        && $curationExpires <= time() + 1800
+        && $curationProof !== ''
+        && hash_equals($expectedProof, $curationProof);
+    if (!$proofValid) {
+        $curationMessage = isset($LANG_VIDEOS['history_csrf'])
+            ? $LANG_VIDEOS['history_csrf'] : 'The security token has expired.';
+    } else {
+        $stateMap = array(
+            'pool_add' => 'added',
+            'pool_pin' => 'pinned',
+            'pool_unpin' => 'unpinned',
+            'pool_remove' => 'removed'
+        );
+        if (isset($stateMap[$curationAction])) {
+            $globalRanking = $ranking->getGlobal(500);
+            $rankingItem = isset($globalRanking[$videoId])
+                ? $globalRanking[$videoId] : array();
+            $saved = $permanentPool->setManualState(
+                $videoId,
+                $stateMap[$curationAction],
+                $rankingItem
+            );
+            $curationMessage = $saved
+                ? $LANG_VIDEOS['curation_saved']
+                : $LANG_VIDEOS['curation_failed'];
+        }
+    }
+}
+$csrfToken = SEC_createToken();
+$isPermanent = $permanentPool->contains($videoId);
+$isPinned = $permanentPool->isPinned($videoId);
 
 $html = '<article class="videos-watch">'
     . VIDEOS_renderNavigation('')
-    . '<div class="videos-player">'
-    . '<iframe id="videos-youtube-player" src="'
+    . '<div class="videos-player"><iframe id="videos-youtube-player" src="'
     . htmlspecialchars($embedUrl, ENT_QUOTES, 'UTF-8')
     . '" title="' . htmlspecialchars($title, ENT_QUOTES, 'UTF-8')
     . '" allow="accelerometer; encrypted-media; picture-in-picture'
@@ -141,130 +146,71 @@ $html = '<article class="videos-watch">'
     . ($playerFullscreen === '1' ? 'allowfullscreen ' : '')
     . 'loading="lazy"></iframe></div>'
     . '<h1>' . htmlspecialchars($title, ENT_QUOTES, 'UTF-8') . '</h1>'
-    . '<p class="videos-channel">'
-    . htmlspecialchars($channelTitle, ENT_QUOTES, 'UTF-8') . '</p>'
+    . '<p class="videos-channel">' . htmlspecialchars($channelTitle, ENT_QUOTES, 'UTF-8') . '</p>'
     . '<p class="videos-local-rating"><strong>'
     . htmlspecialchars($LANG_VIDEOS['local_average'], ENT_QUOTES, 'UTF-8')
-    . ' :</strong> <span id="videos-local-rating-average">' . number_format(
-        (float) $ratingStats['rating_average'],
-        2,
-        ',',
-        ' '
-    ) . '</span>/5 (<span id="videos-local-rating-count">'
-    . (int) $ratingStats['rating_count'] . '</span>)</p>';
+    . ' :</strong> <span id="videos-local-rating-average">'
+    . number_format((float) $ratingStats['rating_average'], 2, ',', ' ')
+    . '</span>/5 (<span id="videos-local-rating-count">' . (int) $ratingStats['rating_count'] . '</span>)</p>';
+
+if ($curationMessage !== '') {
+    $html .= COM_showMessageText($curationMessage, '', true);
+}
 if (SEC_hasRights('videos.moderate')) {
-    $quickModerationUrl = $_CONF['site_admin_url']
-        . '/plugins/videos/quick_moderation.php?video_id='
-        . rawurlencode($videoId);
-    $html .= '<aside class="videos-moderation-actions" aria-label="'
-        . htmlspecialchars(
-            $LANG_VIDEOS['moderation_quick_actions'],
-            ENT_QUOTES,
-            'UTF-8'
-        ) . '"><strong>' . htmlspecialchars(
-            $LANG_VIDEOS['moderation_quick_actions'],
-            ENT_QUOTES,
-            'UTF-8'
-        ) . '</strong><div><a href="' . htmlspecialchars(
-            $quickModerationUrl . '&entity=video&entity_id='
-                . rawurlencode($videoId),
-            ENT_QUOTES,
-            'UTF-8'
-        ) . '">'
-        . htmlspecialchars(
-            $LANG_VIDEOS['moderation_block_video'],
-            ENT_QUOTES,
-            'UTF-8'
-        ) . '</a>';
+    $quickModerationUrl = $_CONF['site_admin_url'] . '/plugins/videos/quick_moderation.php?video_id=' . rawurlencode($videoId);
+    $curationUrl = $localUrl;
+    $html .= '<aside class="videos-moderation-actions" aria-label="Actions éditoriales"><strong>Actions éditoriales</strong><div>';
+    if (!$isPermanent) {
+        $html .= videos_watch_curation_form($curationUrl, 'pool_add', $videoId, 'Ajouter au catalogue permanent', $bootstrap->getSecret(), $uid);
+    } elseif (!$isPinned) {
+        $html .= videos_watch_curation_form($curationUrl, 'pool_pin', $videoId, 'Épingler', $bootstrap->getSecret(), $uid)
+            . videos_watch_curation_form($curationUrl, 'pool_remove', $videoId, 'Retirer du permanent', $bootstrap->getSecret(), $uid);
+    } else {
+        $html .= videos_watch_curation_form($curationUrl, 'pool_unpin', $videoId, 'Désépingler', $bootstrap->getSecret(), $uid)
+            . videos_watch_curation_form($curationUrl, 'pool_remove', $videoId, 'Retirer du permanent', $bootstrap->getSecret(), $uid);
+    }
+    $html .= '<a href="' . htmlspecialchars($quickModerationUrl . '&entity=video&entity_id=' . rawurlencode($videoId), ENT_QUOTES, 'UTF-8') . '">'
+        . htmlspecialchars($LANG_VIDEOS['moderation_block_video'], ENT_QUOTES, 'UTF-8') . '</a>';
     if (Videos_Validator::youtubeChannelId($videoChannelId)) {
-        $html .= '<a href="' . htmlspecialchars(
-            $quickModerationUrl . '&entity=channel&entity_id='
-                . rawurlencode($videoChannelId),
-            ENT_QUOTES,
-            'UTF-8'
-        ) . '">'
-            . htmlspecialchars(
-                $LANG_VIDEOS['moderation_block_channel'],
-                ENT_QUOTES,
-                'UTF-8'
-            ) . '</a>';
+        $html .= '<a href="' . htmlspecialchars($quickModerationUrl . '&entity=channel&entity_id=' . rawurlencode($videoChannelId), ENT_QUOTES, 'UTF-8') . '">'
+            . htmlspecialchars($LANG_VIDEOS['moderation_block_channel'], ENT_QUOTES, 'UTF-8') . '</a>';
     }
     $html .= '</div></aside>';
 }
 if ($description !== '') {
-    $html .= '<p class="videos-description">'
-        . htmlspecialchars($description, ENT_QUOTES, 'UTF-8') . '</p>';
+    $html .= '<p class="videos-description">' . htmlspecialchars($description, ENT_QUOTES, 'UTF-8') . '</p>';
 }
 $html .= '<div id="videos-engagement" class="videos-engagement" '
     . 'data-video-id="' . htmlspecialchars($videoId, ENT_QUOTES, 'UTF-8') . '" '
     . 'data-duration="' . $duration . '" '
-    . 'data-endpoint="' . htmlspecialchars(
-        $_CONF['site_url'] . '/videos/ajax.php',
-        ENT_QUOTES,
-        'UTF-8'
-    ) . '" data-token-name="' . htmlspecialchars(
-        CSRF_TOKEN,
-        ENT_QUOTES,
-        'UTF-8'
-    ) . '" data-token="' . htmlspecialchars(
-        $csrfToken,
-        ENT_QUOTES,
-        'UTF-8'
-    ) . '" data-rating-saved="' . htmlspecialchars(
-        $LANG_VIDEOS['rating_saved'],
-        ENT_QUOTES,
-        'UTF-8'
-    ) . '" data-rating-error="' . htmlspecialchars(
-        $LANG_VIDEOS['rating_error'],
-        ENT_QUOTES,
-        'UTF-8'
-    ) . '" data-rating-locked="' . htmlspecialchars(
-        $LANG_VIDEOS['rating_locked'],
-        ENT_QUOTES,
-        'UTF-8'
-    ) . '" data-rating-waiting="' . htmlspecialchars(
-        $LANG_VIDEOS['rating_waiting'],
-        ENT_QUOTES,
-        'UTF-8'
-    ) . '" data-playback-error="' . htmlspecialchars(
-        $LANG_VIDEOS['playback_error'],
-        ENT_QUOTES,
-        'UTF-8'
-    ) . '" data-rating-countdown="' . htmlspecialchars(
-        $LANG_VIDEOS['rating_countdown'],
-        ENT_QUOTES,
-        'UTF-8'
-    ) . '" data-rating-delete-confirm="' . htmlspecialchars(
-        $LANG_VIDEOS['rating_delete_confirm'],
-        ENT_QUOTES,
-        'UTF-8'
-    ) . '" data-rating-deleted="' . htmlspecialchars(
-        $LANG_VIDEOS['rating_deleted'],
-        ENT_QUOTES,
-        'UTF-8'
-    ) . '" data-rating-delete-error="' . htmlspecialchars(
-        $LANG_VIDEOS['rating_delete_error'],
-        ENT_QUOTES,
-        'UTF-8'
-    ) . '" data-current-rating="' . $personalRating
+    . 'data-endpoint="' . htmlspecialchars($_CONF['site_url'] . '/videos/ajax.php', ENT_QUOTES, 'UTF-8') . '" '
+    . 'data-token-name="' . htmlspecialchars(CSRF_TOKEN, ENT_QUOTES, 'UTF-8') . '" '
+    . 'data-token="' . htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') . '" '
+    . 'data-rating-saved="' . htmlspecialchars($LANG_VIDEOS['rating_saved'], ENT_QUOTES, 'UTF-8') . '" '
+    . 'data-rating-error="' . htmlspecialchars($LANG_VIDEOS['rating_error'], ENT_QUOTES, 'UTF-8') . '" '
+    . 'data-rating-locked="' . htmlspecialchars($LANG_VIDEOS['rating_locked'], ENT_QUOTES, 'UTF-8') . '" '
+    . 'data-rating-waiting="' . htmlspecialchars($LANG_VIDEOS['rating_waiting'], ENT_QUOTES, 'UTF-8') . '" '
+    . 'data-playback-error="' . htmlspecialchars($LANG_VIDEOS['playback_error'], ENT_QUOTES, 'UTF-8') . '" '
+    . 'data-rating-countdown="' . htmlspecialchars($LANG_VIDEOS['rating_countdown'], ENT_QUOTES, 'UTF-8') . '" '
+    . 'data-rating-delete-confirm="' . htmlspecialchars($LANG_VIDEOS['rating_delete_confirm'], ENT_QUOTES, 'UTF-8') . '" '
+    . 'data-rating-deleted="' . htmlspecialchars($LANG_VIDEOS['rating_deleted'], ENT_QUOTES, 'UTF-8') . '" '
+    . 'data-rating-delete-error="' . htmlspecialchars($LANG_VIDEOS['rating_delete_error'], ENT_QUOTES, 'UTF-8') . '" '
+    . 'data-current-rating="' . $personalRating
     . '"><fieldset class="videos-rating"><legend>Votre note</legend>';
 for ($ratingValue = 1; $ratingValue <= 5; $ratingValue++) {
     $selected = $ratingValue <= $personalRating;
     $html .= '<button type="button" data-rating="' . $ratingValue
         . '" aria-label="' . $ratingValue . ' sur 5" aria-pressed="'
-        . ($selected ? 'true' : 'false') . '" class="'
-        . ($selected ? 'is-selected' : '') . '" disabled>&#9733;</button>';
+        . ($selected ? 'true' : 'false') . '" class="' . ($selected ? 'is-selected' : '') . '" disabled>&#9733;</button>';
 }
-$html .= '</fieldset><button type="button" class="videos-rating-delete" '
-    . 'data-delete-rating'
-    . ($personalRating > 0 ? '' : ' hidden') . ' disabled>'
-    . htmlspecialchars(
-        $LANG_VIDEOS['rating_delete'],
-        ENT_QUOTES,
-        'UTF-8'
-    ) . '</button><p class="videos-rating-status" aria-live="polite">'
-    . htmlspecialchars($LANG_VIDEOS['rating_locked'], ENT_QUOTES, 'UTF-8')
-    . '</p></div>';
+$html .= '</fieldset>';
+if ($personalRating > 0) {
+    $html .= '<button type="button" class="videos-rating-delete" data-delete-rating disabled>'
+        . htmlspecialchars($LANG_VIDEOS['rating_delete'], ENT_QUOTES, 'UTF-8')
+        . '</button>';
+}
+$html .= '<p class="videos-rating-status" aria-live="polite">'
+    . htmlspecialchars($LANG_VIDEOS['rating_locked'], ENT_QUOTES, 'UTF-8') . '</p></div>';
 
 if (!empty($_VIDEOS_CONF['sharing_enabled'])) {
     $encodedUrl = rawurlencode($localUrl);
@@ -272,11 +218,7 @@ if (!empty($_VIDEOS_CONF['sharing_enabled'])) {
     $html .= '<nav class="videos-share" aria-label="Partager" '
         . 'data-url="' . htmlspecialchars($localUrl, ENT_QUOTES, 'UTF-8') . '" '
         . 'data-title="' . htmlspecialchars($title, ENT_QUOTES, 'UTF-8') . '" '
-        . 'data-copied="' . htmlspecialchars(
-            $LANG_VIDEOS['link_copied'],
-            ENT_QUOTES,
-            'UTF-8'
-        ) . '">'
+        . 'data-copied="' . htmlspecialchars($LANG_VIDEOS['link_copied'], ENT_QUOTES, 'UTF-8') . '">'
         . '<a class="videos-share-link" rel="nofollow noopener" target="_blank" href="https://www.facebook.com/sharer/sharer.php?u='
         . $encodedUrl . '"><span class="videos-share-icon is-facebook" aria-hidden="true">f</span>Facebook</a> '
         . '<a class="videos-share-link" rel="nofollow noopener" target="_blank" href="https://twitter.com/intent/tweet?url='
@@ -301,99 +243,76 @@ if (!empty($_VIDEOS_CONF['sharing_enabled'])) {
 }
 
 if (count($nextVideos) > 0) {
-    $html .= '<section id="videos-next-panel" class="videos-next-panel" '
-        . 'aria-labelledby="videos-next-title"><h2 id="videos-next-title">'
-        . htmlspecialchars($LANG_VIDEOS['next_video'], ENT_QUOTES, 'UTF-8')
-        . '</h2><p>'
-        . htmlspecialchars($LANG_VIDEOS['next_video_help'], ENT_QUOTES, 'UTF-8')
-        . '</p><div class="videos-next-items">';
+    $html .= '<section id="videos-next-panel" class="videos-next-panel" aria-labelledby="videos-next-title"><h2 id="videos-next-title">'
+        . htmlspecialchars($LANG_VIDEOS['next_video'], ENT_QUOTES, 'UTF-8') . '</h2><p>'
+        . htmlspecialchars($LANG_VIDEOS['next_video_help'], ENT_QUOTES, 'UTF-8') . '</p><div class="videos-next-items">';
     $nextPosition = 0;
     foreach ($nextVideos as $nextItem) {
         $nextId = $nextItem['video_id'];
         $nextVideo = $nextItem['video'];
-        $nextSnippet = isset($nextVideo['snippet'])
-            ? $nextVideo['snippet'] : array();
-        $nextTitle = isset($nextSnippet['title'])
-            ? $nextSnippet['title'] : $nextId;
-        $nextChannel = isset($nextSnippet['channelTitle'])
-            ? $nextSnippet['channelTitle'] : '';
-        $nextThumbnail = isset(
-            $nextSnippet['thumbnails']['medium']['url']
-        ) ? $nextSnippet['thumbnails']['medium']['url'] : '';
-        $nextUrl = $_CONF['site_url'] . '/videos/watch.php?v='
-            . rawurlencode($nextId);
+        $nextSnippet = isset($nextVideo['snippet']) ? $nextVideo['snippet'] : array();
+        $nextTitle = isset($nextSnippet['title']) ? $nextSnippet['title'] : $nextId;
+        $nextChannel = isset($nextSnippet['channelTitle']) ? $nextSnippet['channelTitle'] : '';
+        $nextThumbnail = isset($nextSnippet['thumbnails']['medium']['url']) ? $nextSnippet['thumbnails']['medium']['url'] : '';
+        $nextUrl = $_CONF['site_url'] . '/videos/watch.php?v=' . rawurlencode($nextId);
         if ($contextKey !== '') {
             $nextUrl .= '&c=' . rawurlencode($contextKey);
         }
-        $nextProof = hash_hmac(
-            'sha256',
-            'recommendation:' . $videoId . ':' . $nextId,
-            $bootstrap->getSecret()
-        );
-        $html .= '<article class="videos-next-item'
-            . ($nextPosition === 0 ? ' is-active' : '')
+        $nextProof = hash_hmac('sha256', 'recommendation:' . $videoId . ':' . $nextId, $bootstrap->getSecret());
+        $html .= '<article class="videos-next-item' . ($nextPosition === 0 ? ' is-active' : '')
             . '" data-next-item="' . $nextPosition . '" data-next-video="'
-            . htmlspecialchars($nextId, ENT_QUOTES, 'UTF-8')
-            . '" data-next-proof="'
+            . htmlspecialchars($nextId, ENT_QUOTES, 'UTF-8') . '" data-next-proof="'
             . htmlspecialchars($nextProof, ENT_QUOTES, 'UTF-8') . '">';
         if (strpos($nextThumbnail, 'https://') === 0) {
-            $html .= '<a href="'
-                . htmlspecialchars($nextUrl, ENT_QUOTES, 'UTF-8')
-                . '"><img loading="lazy" src="'
-                . htmlspecialchars($nextThumbnail, ENT_QUOTES, 'UTF-8')
-                . '" alt=""></a>';
+            $html .= '<a href="' . htmlspecialchars($nextUrl, ENT_QUOTES, 'UTF-8') . '"><img loading="lazy" src="'
+                . htmlspecialchars($nextThumbnail, ENT_QUOTES, 'UTF-8') . '" alt="'
+                . htmlspecialchars(VIDEOS_thumbnailAlt($nextTitle, $nextChannel), ENT_QUOTES, 'UTF-8') . '"></a>';
         }
-        $html .= '<div><h3><a href="'
-            . htmlspecialchars($nextUrl, ENT_QUOTES, 'UTF-8') . '">'
-            . htmlspecialchars($nextTitle, ENT_QUOTES, 'UTF-8')
-            . '</a></h3>';
+        $html .= '<div><h3><a href="' . htmlspecialchars($nextUrl, ENT_QUOTES, 'UTF-8') . '">'
+            . htmlspecialchars($nextTitle, ENT_QUOTES, 'UTF-8') . '</a></h3>';
         if ($nextChannel !== '') {
-            $html .= '<p>'
-                . htmlspecialchars($nextChannel, ENT_QUOTES, 'UTF-8')
-                . '</p>';
+            $html .= '<p>' . htmlspecialchars($nextChannel, ENT_QUOTES, 'UTF-8') . '</p>';
         }
-        $html .= '<a class="videos-watch-next" href="'
-            . htmlspecialchars($nextUrl, ENT_QUOTES, 'UTF-8') . '">'
-            . htmlspecialchars($LANG_VIDEOS['watch_next'], ENT_QUOTES, 'UTF-8')
-            . '</a></div></article>';
+        $html .= '<a class="videos-watch-next" href="' . htmlspecialchars($nextUrl, ENT_QUOTES, 'UTF-8') . '">'
+            . htmlspecialchars($LANG_VIDEOS['watch_next'], ENT_QUOTES, 'UTF-8') . '</a></div></article>';
         $nextPosition++;
     }
     $html .= '</div>';
     if (count($nextVideos) > 1) {
-        $html .= '<button type="button" class="videos-another-suggestion" '
-            . 'data-next-other>'
-            . htmlspecialchars(
-                $LANG_VIDEOS['another_suggestion'],
-                ENT_QUOTES,
-                'UTF-8'
-            ) . '</button>';
+        $html .= '<button type="button" class="videos-another-suggestion" data-next-other>'
+            . htmlspecialchars($LANG_VIDEOS['another_suggestion'], ENT_QUOTES, 'UTF-8') . '</button>';
     }
     $html .= '</section>';
 }
 if (count($faqItems) > 0) {
-    $html .= $faqService->render(
-        $faqItems,
-        $LANG_VIDEOS['video_about_title']
-    );
+    $html .= $faqService->render($faqItems, $LANG_VIDEOS['video_about_title']);
 }
 $html .= '</article>';
 $html .= '<script src="https://www.youtube.com/iframe_api"></script>'
-    . '<script src="' . htmlspecialchars(
-        $_CONF['site_url'] . '/videos/js/videos-player.js?v='
-            . rawurlencode(VIDEOS_PLUGIN_VERSION),
-        ENT_QUOTES,
-        'UTF-8'
-    ) . '"></script><script src="' . htmlspecialchars(
-        $_CONF['site_url'] . '/videos/js/videos-share.js?v='
-            . rawurlencode(VIDEOS_PLUGIN_VERSION),
-        ENT_QUOTES,
-        'UTF-8'
-    ) . '"></script>';
+    . '<script src="' . htmlspecialchars($_CONF['site_url'] . '/videos/js/videos-player.js?v=' . rawurlencode(VIDEOS_PLUGIN_VERSION), ENT_QUOTES, 'UTF-8') . '"></script>'
+    . '<script src="' . htmlspecialchars($_CONF['site_url'] . '/videos/js/videos-share.js?v=' . rawurlencode(VIDEOS_PLUGIN_VERSION), ENT_QUOTES, 'UTF-8') . '"></script>';
 
-echo COM_createHTMLDocument(
-    $html,
-    array(
-        'pagetitle' => $title,
-        'headercode' => $seoHeader
-    )
-);
+echo COM_createHTMLDocument($html, array('pagetitle' => $title, 'headercode' => $seoHeader));
+
+function videos_watch_curation_proof($videoId, $action, $expires, $uid, $secret)
+{
+    return hash_hmac(
+        'sha256',
+        'curation:' . (int) $uid . ':' . (string) $videoId . ':'
+            . (string) $action . ':' . (int) $expires,
+        (string) $secret
+    );
+}
+
+function videos_watch_curation_form($actionUrl, $action, $videoId, $label, $secret, $uid)
+{
+    $expires = time() + 900;
+    $proof = videos_watch_curation_proof($videoId, $action, $expires, $uid, $secret);
+    return '<form class="videos-inline-form" method="post" action="'
+        . htmlspecialchars($actionUrl, ENT_QUOTES, 'UTF-8') . '">'
+        . '<input type="hidden" name="videos_curation_action" value="' . htmlspecialchars($action, ENT_QUOTES, 'UTF-8') . '">'
+        . '<input type="hidden" name="video_id" value="' . htmlspecialchars($videoId, ENT_QUOTES, 'UTF-8') . '">'
+        . '<input type="hidden" name="videos_curation_expires" value="' . (int) $expires . '">'
+        . '<input type="hidden" name="videos_curation_proof" value="' . htmlspecialchars($proof, ENT_QUOTES, 'UTF-8') . '">'
+        . '<button type="submit">' . htmlspecialchars($label, ENT_QUOTES, 'UTF-8') . '</button></form>';
+}

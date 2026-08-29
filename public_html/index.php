@@ -11,7 +11,7 @@ $seo = new Videos_Seo(
 if (empty($_VIDEOS_CONF['enabled'])) {
     $publicTitle = VIDEOS_getPublicTitle();
     echo COM_createHTMLDocument(
-        COM_showMessageText('Le catalogue vidéo est désactivé.', '', true),
+        COM_showMessageText($LANG_VIDEOS['catalogue_disabled'], '', true),
         array(
             'pagetitle' => $publicTitle,
             'headercode' => $seo->catalogue($publicTitle, 1, false)
@@ -26,13 +26,64 @@ $videos = array();
 $videoMetadata = array();
 $catalogueContextKey = '';
 $message = '';
+$searchQuery = isset($_GET['q'])
+    ? trim(strip_tags((string) $_GET['q'])) : '';
+if (function_exists('MBYTE_substr')) {
+    $searchQuery = MBYTE_substr($searchQuery, 0, 120);
+} else {
+    $searchQuery = substr($searchQuery, 0, 120);
+}
+$isLocalSearch = $searchQuery !== '';
+$searchTotal = 0;
 $page = isset($_GET['page']) ? max(1, (int) $_GET['page']) : 1;
 $perPage = isset($_VIDEOS_CONF['videos_per_page'])
     ? max(1, min(50, (int) $_VIDEOS_CONF['videos_per_page'])) : 12;
 $pageCount = 1;
 
 if (!$bootstrap->isReady()) {
-    $message = 'Le catalogue vidéo est temporairement indisponible.';
+    $message = $LANG_VIDEOS['catalogue_unavailable'];
+} elseif ($isLocalSearch) {
+    // Reuse exactly the same bounded local corpus as Geeklog Search API 2.
+    // No YouTube API call is performed by a visitor search.
+    $searchService = VIDEOS_getSearchService($bootstrap);
+    if ($searchService === false) {
+        $message = $LANG_VIDEOS['catalogue_search_unavailable'];
+    } else {
+        $matches = $searchService->search(
+            $searchQuery,
+            'any',
+            '',
+            '',
+            false,
+            500
+        );
+        $allVideos = array();
+        foreach ($matches as $videoId => $match) {
+            if (!empty($match['video']) && is_array($match['video'])) {
+                $allVideos[$videoId] = $match['video'];
+            }
+            if (!empty($match['ranking']) && is_array($match['ranking'])) {
+                $videoMetadata[$videoId] = array(
+                    'rating_count' => isset($match['ranking']['rating_count'])
+                        ? $match['ranking']['rating_count'] : 0,
+                    'rating_average' => isset($match['ranking']['rating_average'])
+                        ? $match['ranking']['rating_average'] : 0
+                );
+            }
+        }
+        $searchTotal = count($allVideos);
+        $pageCount = max(1, (int) ceil($searchTotal / $perPage));
+        $page = min($page, $pageCount);
+        $videos = array_slice(
+            $allVideos,
+            ($page - 1) * $perPage,
+            $perPage,
+            true
+        );
+        if ($searchTotal === 0) {
+            $message = $LANG_VIDEOS['catalogue_search_empty'];
+        }
+    }
 } else {
     $extractor = new Videos_KeywordExtractor(
         isset($_VIDEOS_CONF['additional_stop_words'])
@@ -66,16 +117,13 @@ if (!$bootstrap->isReady()) {
             ? $_VIDEOS_CONF['excluded_keywords'] : ''
     );
     $terms = $extractor->extract($context, $analysis);
-    $query = $extractor->buildQuery(
-        $terms,
-        $analysis['excluded_keywords']
-    );
+    $query = $extractor->buildQuery($terms, $analysis['excluded_keywords']);
     if ($query === '') {
-        $message = 'La thématique vidéo doit être configurée par un administrateur.';
+        $message = $LANG_VIDEOS['catalogue_topic_required'];
     } else {
         $result = videos_public_search($bootstrap, $query, $_VIDEOS_CONF);
         if ($result === false) {
-            $message = 'Aucune vidéo n’est actuellement disponible.';
+            $message = $LANG_VIDEOS['catalogue_none_available'];
         } else {
             $catalogueContextKey = isset($result['cache_key']) &&
                 preg_match('/^[a-f0-9]{64}$/', $result['cache_key'])
@@ -123,9 +171,7 @@ if (!$bootstrap->isReady()) {
                 $ranking
             );
             $selectionConfiguration = $_VIDEOS_CONF;
-            $moderation = new Videos_Moderation(
-                $bootstrap->getStore()
-            );
+            $moderation = new Videos_Moderation($bootstrap->getStore());
             $priorityIds = $moderation->getPriorityChannelIds(500);
             if (count($priorityIds) > 0) {
                 $existingPriority = isset(
@@ -141,8 +187,7 @@ if (!$bootstrap->isReady()) {
                 $query,
                 $selectionConfiguration,
                 !empty($_VIDEOS_CONF['account_history_enabled']) &&
-                    isset($_USER['uid'])
-                    ? (int) $_USER['uid'] : 1
+                    isset($_USER['uid']) ? (int) $_USER['uid'] : 1
             );
             if (!empty($_VIDEOS_CONF['permanent_pool_enabled'])) {
                 $pool = new Videos_PermanentPool(
@@ -158,8 +203,7 @@ if (!$bootstrap->isReady()) {
                     'permanent-pool',
                     $selectionConfiguration,
                     !empty($_VIDEOS_CONF['account_history_enabled']) &&
-                        isset($_USER['uid'])
-                        ? (int) $_USER['uid'] : 1
+                        isset($_USER['uid']) ? (int) $_USER['uid'] : 1
                 );
                 $selection = $pool->mergeSelections(
                     $selection,
@@ -186,14 +230,28 @@ if (!$bootstrap->isReady()) {
 }
 
 $faqService = new Videos_Faq($LANG_VIDEOS_FAQ, $_VIDEOS_CONF);
-$faqItems = !empty($_VIDEOS_CONF['faq_catalogue_enabled']) &&
+$faqItems = !$isLocalSearch &&
+    !empty($_VIDEOS_CONF['faq_catalogue_enabled']) &&
     $page === 1 && count($videos) > 0
     ? $faqService->catalogue() : array();
 $html = '<div class="videos-page">'
     . VIDEOS_renderNavigation('catalogue')
-    . '<h1>'
-    . htmlspecialchars($publicTitle, ENT_QUOTES, 'UTF-8')
-    . '</h1>';
+    . '<h1>' . htmlspecialchars($publicTitle, ENT_QUOTES, 'UTF-8') . '</h1>'
+    . videos_catalogue_search_form(
+        $_CONF['site_url'] . '/videos/index.php',
+        $searchQuery
+    );
+
+if ($isLocalSearch) {
+    $html .= '<div class="videos-search-summary"><strong>'
+        . COM_numberFormat($searchTotal) . '</strong> ' . htmlspecialchars(sprintf($LANG_VIDEOS['catalogue_search_results'], $searchQuery), ENT_QUOTES, 'UTF-8') . ''
+        . ' <a href="'
+        . htmlspecialchars(
+            $_CONF['site_url'] . '/videos/index.php',
+            ENT_QUOTES,
+            'UTF-8'
+        ) . '">' . htmlspecialchars($LANG_VIDEOS['catalogue_show_all'], ENT_QUOTES, 'UTF-8') . '</a></div>';
+}
 if ($message !== '') {
     $html .= '<p>' . htmlspecialchars($message, ENT_QUOTES, 'UTF-8') . '</p>';
 }
@@ -204,17 +262,17 @@ if (count($videos) > 0) {
         $title = isset($snippet['title']) ? $snippet['title'] : $videoId;
         $channelTitle = isset($snippet['channelTitle'])
             ? $snippet['channelTitle'] : '';
+        $channelId = isset($snippet['channelId'])
+            ? (string) $snippet['channelId'] : '';
         $duration = isset($video['videos_duration_seconds'])
             ? (int) $video['videos_duration_seconds'] : 0;
         $metadata = isset($videoMetadata[$videoId])
             ? $videoMetadata[$videoId] : array();
-        $thumbnail = '';
-        if (isset($snippet['thumbnails']['medium']['url'])) {
-            $thumbnail = $snippet['thumbnails']['medium']['url'];
-        }
+        $thumbnail = isset($snippet['thumbnails']['medium']['url'])
+            ? $snippet['thumbnails']['medium']['url'] : '';
         $url = $_CONF['site_url'] . '/videos/watch.php?v='
             . rawurlencode($videoId);
-        if ($catalogueContextKey !== '') {
+        if (!$isLocalSearch && $catalogueContextKey !== '') {
             $url .= '&c=' . rawurlencode($catalogueContextKey);
         }
         $html .= '<article class="videos-card"><a href="'
@@ -222,16 +280,36 @@ if (count($videos) > 0) {
         if (strpos($thumbnail, 'https://') === 0) {
             $html .= '<img loading="lazy" src="'
                 . htmlspecialchars($thumbnail, ENT_QUOTES, 'UTF-8')
-                . '" alt="">';
+                . '" alt="'
+                . htmlspecialchars(
+                    VIDEOS_thumbnailAlt($title, $channelTitle),
+                    ENT_QUOTES,
+                    'UTF-8'
+                ) . '">';
         }
         $html .= '</a><div class="videos-card-content"><h2><a href="'
             . htmlspecialchars($url, ENT_QUOTES, 'UTF-8') . '">'
-            . htmlspecialchars($title, ENT_QUOTES, 'UTF-8')
-            . '</a></h2>';
+            . htmlspecialchars($title, ENT_QUOTES, 'UTF-8') . '</a></h2>';
         if ($channelTitle !== '') {
-            $html .= '<p class="videos-card-meta">'
-                . htmlspecialchars($channelTitle, ENT_QUOTES, 'UTF-8')
-                . '</p>';
+            $html .= '<p class="videos-card-meta">';
+            if ($channelId !== '' &&
+                VIDEOS_channelPageEligible($channelId, $bootstrap)) {
+                $html .= '<a href="'
+                    . htmlspecialchars(
+                        plugin_idtourl_videos('', 'channel:' . $channelId),
+                        ENT_QUOTES,
+                        'UTF-8'
+                    ) . '">'
+                    . htmlspecialchars($channelTitle, ENT_QUOTES, 'UTF-8')
+                    . '</a>';
+            } else {
+                $html .= htmlspecialchars(
+                    $channelTitle,
+                    ENT_QUOTES,
+                    'UTF-8'
+                );
+            }
+            $html .= '</p>';
         }
         if ($duration > 0) {
             $html .= '<p class="videos-card-meta">'
@@ -247,7 +325,8 @@ if (count($videos) > 0) {
                     $LANG_VIDEOS['local_average'],
                     ENT_QUOTES,
                     'UTF-8'
-                ) . ' : ' . number_format(
+                ) . ' : '
+                . number_format(
                     (float) $metadata['rating_average'],
                     2,
                     ',',
@@ -274,44 +353,61 @@ if (count($videos) > 0) {
     }
     $html .= '</div>';
     if ($pageCount > 1) {
+        $paginationParameters = $isLocalSearch
+            ? array('q' => $searchQuery) : array();
         $html .= videos_catalogue_pagination(
             $page,
             $pageCount,
             $_CONF['site_url'] . '/videos/index.php',
-            $LANG_VIDEOS
+            $LANG_VIDEOS,
+            $paginationParameters
         );
     }
 }
 if (count($faqItems) > 0) {
-    $html .= $faqService->render(
-        $faqItems,
-        $LANG_VIDEOS['faq_title']
-    );
+    $html .= $faqService->render($faqItems, $LANG_VIDEOS['faq_title']);
 }
 $html .= '</div>';
 
-$catalogueHeader = $seo->catalogue(
-    $publicTitle,
-    $page,
-    count($videos) > 0
-);
-if (!empty($_VIDEOS_CONF['seo_catalogue_index'])) {
-    $catalogueHeader .= $faqService->structuredData($faqItems);
+if ($isLocalSearch) {
+    // Search-result URLs are useful to visitors but should not create an
+    // unbounded family of indexable query pages.
+    $catalogueHeader = '<link rel="canonical" href="'
+        . htmlspecialchars(
+            $_CONF['site_url'] . '/videos/index.php',
+            ENT_QUOTES,
+            'UTF-8'
+        ) . '">' . "\n"
+        . '<meta name="robots" content="noindex,follow">';
+} else {
+    $catalogueHeader = $seo->catalogue(
+        $publicTitle,
+        $page,
+        count($videos) > 0
+    );
+    if (!empty($_VIDEOS_CONF['seo_catalogue_index'])) {
+        $catalogueHeader .= $faqService->structuredData($faqItems);
+    }
+}
+$catalogueHeader .= "\n" . videos_catalogue_search_style();
+$pageTitle = $isLocalSearch
+    ? sprintf($LANG_VIDEOS['catalogue_search_page_title'], $searchQuery) . ' - ' . $publicTitle
+    : $publicTitle;
+if (!$isLocalSearch && $page > 1) {
+    $pageTitle .= ' – Page ' . $page;
 }
 echo COM_createHTMLDocument(
     $html,
     array(
-        'pagetitle' => $publicTitle,
+        'pagetitle' => $pageTitle,
         'headercode' => $catalogueHeader
     )
 );
 
 function videos_public_search($bootstrap, $query, $configuration)
 {
-    return videos_create_public_youtube_service(
-        $bootstrap,
-        $configuration
-    )->find($query, videos_build_public_search_parameters($configuration));
+    return videos_create_public_youtube_service($bootstrap, $configuration)
+        ->find($query, videos_build_public_search_parameters($configuration));
 }
 
 function videos_create_public_youtube_service($bootstrap, $configuration)
@@ -344,17 +440,18 @@ function videos_build_public_search_parameters($configuration)
         'published_after' => '',
         'category_id' => '',
         'channel_id' => '',
-        'daily_search_limit' => isset($configuration['youtube_daily_search_limit'])
-            ? $configuration['youtube_daily_search_limit'] : 20,
+        'daily_search_limit' => isset(
+            $configuration['youtube_daily_search_limit']
+        ) ? $configuration['youtube_daily_search_limit'] : 20,
         'cache_ttl' => isset($configuration['search_cache_ttl'])
             ? $configuration['search_cache_ttl'] : 86400,
         'video_cache_ttl' => isset($configuration['video_cache_ttl'])
             ? $configuration['video_cache_ttl'] : 86400,
         'channel_cache_ttl' => isset($configuration['channel_cache_ttl'])
             ? $configuration['channel_cache_ttl'] : 604800,
-        'availability_cache_ttl' =>
-            isset($configuration['availability_cache_ttl'])
-                ? $configuration['availability_cache_ttl'] : 86400,
+        'availability_cache_ttl' => isset(
+            $configuration['availability_cache_ttl']
+        ) ? $configuration['availability_cache_ttl'] : 86400,
         'blocked_videos' => isset($configuration['blocked_videos'])
             ? $configuration['blocked_videos'] : '',
         'blocked_channels' => isset($configuration['blocked_channels'])
@@ -363,15 +460,42 @@ function videos_build_public_search_parameters($configuration)
             ? $configuration['allowed_channels'] : '',
         'minimum_duration' => 0,
         'maximum_duration' => 0,
-        'exclude_short_videos' =>
-            !empty($configuration['exclude_short_videos']) ? 1 : 0,
-        'short_filter_mode' => isset(
-            $configuration['short_filter_mode']
-        ) ? $configuration['short_filter_mode'] : 'probable',
-        'short_max_duration' => isset(
-            $configuration['short_max_duration']
-        ) ? $configuration['short_max_duration'] : 180
+        'exclude_short_videos' => !empty($configuration['exclude_short_videos'])
+            ? 1 : 0,
+        'short_filter_mode' => isset($configuration['short_filter_mode'])
+            ? $configuration['short_filter_mode'] : 'probable',
+        'short_max_duration' => isset($configuration['short_max_duration'])
+            ? $configuration['short_max_duration'] : 180
     );
+}
+
+function videos_catalogue_search_form($action, $query)
+{
+    global $LANG_VIDEOS;
+    global $LANG_VIDEOS;
+    return '<form class="videos-catalogue-search" method="get" action="'
+        . htmlspecialchars($action, ENT_QUOTES, 'UTF-8') . '">'
+        . '<label for="videos-search-q">' . htmlspecialchars($LANG_VIDEOS['catalogue_search_label'], ENT_QUOTES, 'UTF-8') . '</label>'
+        . '<div><input id="videos-search-q" type="search" name="q" maxlength="120"'
+        . ' value="' . htmlspecialchars($query, ENT_QUOTES, 'UTF-8') . '"'
+        . ' placeholder="' . htmlspecialchars($LANG_VIDEOS['catalogue_search_placeholder'], ENT_QUOTES, 'UTF-8') . '">'
+        . '<button type="submit">' . htmlspecialchars($LANG_VIDEOS['catalogue_search_button'], ENT_QUOTES, 'UTF-8') . '</button></div>'
+        . '</form>';
+}
+
+function videos_catalogue_search_style()
+{
+    return '<style>'
+        . '.videos-catalogue-search{margin:0 0 1.25rem;padding:1rem;border:1px solid rgba(127,127,127,.28);border-radius:.55rem;background:rgba(127,127,127,.045)}'
+        . '.videos-catalogue-search label{display:block;margin-bottom:.45rem;font-weight:600}'
+        . '.videos-catalogue-search>div{display:flex;gap:.5rem;align-items:stretch}'
+        . '.videos-catalogue-search input{flex:1 1 20rem;min-width:0;padding:.65rem .75rem;border:1px solid rgba(127,127,127,.45);border-radius:.35rem;background:transparent;color:inherit}'
+        . '.videos-catalogue-search button{padding:.65rem 1rem;border:1px solid rgba(127,127,127,.45);border-radius:.35rem;cursor:pointer}'
+        . '.videos-catalogue-search p,.videos-search-summary{font-size:.88rem;line-height:1.4}'
+        . '.videos-catalogue-search p{margin:.55rem 0 0;opacity:.75}'
+        . '.videos-search-summary{margin:0 0 1rem;padding:.7rem .85rem;background:rgba(127,127,127,.08);border-radius:.4rem}'
+        . '@media(max-width:520px){.videos-catalogue-search>div{flex-direction:column}.videos-catalogue-search input,.videos-catalogue-search button{width:100%;box-sizing:border-box}}'
+        . '</style>';
 }
 
 function videos_catalogue_duration($seconds)
@@ -380,37 +504,48 @@ function videos_catalogue_duration($seconds)
     $minutes = floor(($seconds % 3600) / 60);
     $remaining = $seconds % 60;
     return ($hours > 0 ? $hours . ':' : '')
-        . ($hours > 0 ? str_pad($minutes, 2, '0', STR_PAD_LEFT) : $minutes)
+        . ($hours > 0
+            ? str_pad($minutes, 2, '0', STR_PAD_LEFT) : $minutes)
         . ':' . str_pad($remaining, 2, '0', STR_PAD_LEFT);
 }
 
-function videos_catalogue_pagination($page, $pageCount, $baseUrl, $language)
-{
+function videos_catalogue_pagination(
+    $page,
+    $pageCount,
+    $baseUrl,
+    $language,
+    $parameters = array()
+) {
     $html = '<nav class="videos-pagination" aria-label="Pagination">';
     if ($page > 1) {
+        $parameters['page'] = $page - 1;
         $html .= '<a rel="prev" href="'
             . htmlspecialchars(
-                $baseUrl . '?page=' . ($page - 1),
+                $baseUrl . '?' . http_build_query($parameters, '', '&'),
                 ENT_QUOTES,
                 'UTF-8'
-            ) . '">' . htmlspecialchars(
+            ) . '">'
+            . htmlspecialchars(
                 $language['previous_page'],
                 ENT_QUOTES,
                 'UTF-8'
             ) . '</a>';
     }
-    $html .= '<span>' . htmlspecialchars(
-        sprintf($language['catalogue_page'], $page, $pageCount),
-        ENT_QUOTES,
-        'UTF-8'
-    ) . '</span>';
+    $html .= '<span>'
+        . htmlspecialchars(
+            sprintf($language['catalogue_page'], $page, $pageCount),
+            ENT_QUOTES,
+            'UTF-8'
+        ) . '</span>';
     if ($page < $pageCount) {
+        $parameters['page'] = $page + 1;
         $html .= '<a rel="next" href="'
             . htmlspecialchars(
-                $baseUrl . '?page=' . ($page + 1),
+                $baseUrl . '?' . http_build_query($parameters, '', '&'),
                 ENT_QUOTES,
                 'UTF-8'
-            ) . '">' . htmlspecialchars(
+            ) . '">'
+            . htmlspecialchars(
                 $language['next_page'],
                 ENT_QUOTES,
                 'UTF-8'
