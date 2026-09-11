@@ -263,6 +263,8 @@ echo COM_createHTMLDocument($html, array('pagetitle' => $LANG_VIDEOS['admin_titl
 
 function videos_actions_failure_message($store, $configuration, $prefix)
 {
+    global $LANG_VIDEOS;
+
     $status = (new Videos_Quota($store))->status();
     $data = isset($status['data']) && is_array($status['data']) ? $status['data'] : array();
     $counts = isset($data['counts']) && is_array($data['counts']) ? $data['counts'] : array();
