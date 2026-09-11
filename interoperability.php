@@ -318,6 +318,12 @@ function plugin_autotags_videos($op, $content = '', $autotag = '')
     if (empty($record)) {
         return $content;
     }
+
+    // The header hook runs after content preparation in normal Geeklog page
+    // rendering. Flag the stylesheet only when a valid Videos autotag is
+    // actually replaced.
+    $GLOBALS['_VIDEOS_NEEDS_AUTOTAG_CSS'] = true;
+
     $mode = isset($autotag['parm2']) ? strtolower(trim((string) $autotag['parm2'])) : '';
     $safeUrl = htmlspecialchars($record['url'], ENT_QUOTES, 'UTF-8');
     $safeTitle = htmlspecialchars($record['title'], ENT_QUOTES, 'UTF-8');
