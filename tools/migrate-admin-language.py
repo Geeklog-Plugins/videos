@@ -20,6 +20,31 @@ ADMIN_CSS = ROOT / 'public_html' / 'css' / 'admin.css'
 BEGIN = '// VIDEOS ADMIN LANGUAGE KEYS 0.19.0'
 END = '// END VIDEOS ADMIN LANGUAGE KEYS 0.19.0'
 UI_MARKER = '/* VIDEOS ADMIN UNIFIED UI 0.19.0 */'
+TOKEN_PREFIX = '{{videos_admin_'
+
+EXTRA = {
+    'Vue générale': 'Overview',
+    'État du catalogue vidéo, accès rapides et intégrations Geeklog.': 'Video catalogue status, quick actions and Geeklog integrations.',
+    'Ajouter une vidéo': 'Add a video',
+    'Configuration': 'Configuration',
+    'Voir le catalogue': 'View catalogue',
+    'Toutes les statistiques': 'All statistics',
+    'Réservoir': 'Reservoir',
+    'Vidéos classées': 'Ranked videos',
+    'Intégrations': 'Integrations',
+    'Le corpus vidéo local est disponible dans la recherche native.': 'The local video corpus is available in native search.',
+    'XML Sitemap': 'XML Sitemap',
+    'Compatible': 'Compatible',
+    'Les contenus publics persistants sont exposés via l’API ItemInfo de Geeklog.': 'Persistent public content is exposed through the Geeklog ItemInfo API.',
+    'Syndication': 'Syndication',
+    'À compléter': 'To complete',
+    'Flux RSS/Atom via le moteur de syndication natif de Geeklog.': 'RSS/Atom feeds through Geeklog native syndication.',
+    'Pages publiques Videos': 'Videos public pages',
+    'Pages publiques :': 'Public pages:',
+    'Classement vidéos': 'Video ranking',
+    'Classement chaînes': 'Channel ranking',
+    'Ouvrir les outils de réparation': 'Open repair tools',
+}
 
 
 def php_unescape(value):
@@ -50,6 +75,10 @@ def key_for(source):
     return 'text_' + hashlib.sha1(source.encode('utf-8')).hexdigest()[:12]
 
 
+def token_for(source):
+    return TOKEN_PREFIX + key_for(source) + '}}'
+
+
 def replace_language_block(path, pairs):
     text = path.read_text(encoding='utf-8')
     lines = [BEGIN, '$LANG_VIDEOS_ADMIN = array(']
@@ -78,27 +107,50 @@ def replace_language_block(path, pairs):
 
 def replace_admin_literals(path, sources):
     text = path.read_text(encoding='utf-8')
+
+    # Exact PHP literals become direct lookups, useful for messages, comparisons
+    # and button labels passed as function arguments.
     for source in sorted(sources, key=len, reverse=True):
         literal = "'" + php_escape(source) + "'"
         replacement = "VIDEOS_adminText('%s')" % key_for(source)
         text = text.replace(literal, replacement)
-    # Whole-document replacement remains available for third-party/legacy code,
-    # but these four first-party admin pages now use explicit language lookups.
+
+    # Text embedded inside larger HTML strings becomes a language token. This
+    # removes user-facing prose from admin PHP without restructuring every
+    # concatenated HTML fragment.
+    for source in sorted(sources, key=len, reverse=True):
+        if source in text:
+            text = text.replace(source, token_for(source))
+
     text = text.replace('$html = VIDEOS_localizeAdminText($html);', '')
+    text = text.replace(
+        'COM_createHTMLDocument(\n    $html,',
+        'COM_createHTMLDocument(\n    VIDEOS_adminRender($html),'
+    )
+    text = text.replace(
+        'COM_createHTMLDocument(\n        $html,',
+        'COM_createHTMLDocument(\n        VIDEOS_adminRender($html),'
+    )
     path.write_text(text, encoding='utf-8')
 
 
-def ensure_admin_helper():
+def ensure_admin_helpers():
     text = FUNCTIONS.read_text(encoding='utf-8')
-    if 'function VIDEOS_adminText($key)' in text:
-        return
     marker = 'function VIDEOS_localizeAdminText($text)\n{'
     pos = text.find(marker)
     if pos < 0:
         raise RuntimeError('Unable to locate VIDEOS_localizeAdminText()')
-    helper = """function VIDEOS_adminText($key)\n{\n    global $LANG_VIDEOS_ADMIN;\n\n    if (isset($LANG_VIDEOS_ADMIN) &&\n        is_array($LANG_VIDEOS_ADMIN) &&\n        isset($LANG_VIDEOS_ADMIN[$key])) {\n        return $LANG_VIDEOS_ADMIN[$key];\n    }\n\n    return (string) $key;\n}\n\n"""
-    text = text[:pos] + helper + text[pos:]
-    FUNCTIONS.write_text(text, encoding='utf-8')
+
+    helper = ''
+    if 'function VIDEOS_adminText($key)' not in text:
+        helper += """function VIDEOS_adminText($key)\n{\n    global $LANG_VIDEOS_ADMIN;\n\n    if (isset($LANG_VIDEOS_ADMIN) &&\n        is_array($LANG_VIDEOS_ADMIN) &&\n        isset($LANG_VIDEOS_ADMIN[$key])) {\n        return $LANG_VIDEOS_ADMIN[$key];\n    }\n\n    return (string) $key;\n}\n\n"""
+
+    if 'function VIDEOS_adminRender($text)' not in text:
+        helper += """function VIDEOS_adminRender($text)\n{\n    global $LANG_VIDEOS_ADMIN;\n\n    if (!isset($LANG_VIDEOS_ADMIN) || !is_array($LANG_VIDEOS_ADMIN) || $text === '') {\n        return $text;\n    }\n\n    $replace = array();\n    foreach ($LANG_VIDEOS_ADMIN as $key => $value) {\n        $replace['{{videos_admin_' . $key . '}}'] = $value;\n    }\n\n    return strtr((string) $text, $replace);\n}\n\n"""
+
+    if helper:
+        text = text[:pos] + helper + text[pos:]
+        FUNCTIONS.write_text(text, encoding='utf-8')
 
 
 def ensure_unified_css():
@@ -112,13 +164,11 @@ def ensure_unified_css():
     --videos-admin-gap: 1.25rem;
 }
 
-/* Overview uses Geeklog's block shell; keep its content away from the edges. */
 .videos-admin.block-center > .block-content {
     padding: 0 var(--videos-admin-gap) var(--videos-admin-gap);
     box-sizing: border-box;
 }
 
-/* Actions, Statistics and Moderation use the same visual shell. */
 .videos-admin:not(.block-center) {
     overflow: hidden;
     border: 1px solid rgba(127, 127, 127, .22);
@@ -210,6 +260,10 @@ def main():
         text = path.read_text(encoding='utf-8')
         language_pairs[name] = extract_admin_pairs(text)
 
+    # Recent dashboard strings were introduced after the legacy translation map.
+    language_pairs['english.php'].update(EXTRA)
+    language_pairs['french_france.php'].update({key: key for key in EXTRA})
+
     sources = set()
     for pairs in language_pairs.values():
         sources.update(pairs.keys())
@@ -222,7 +276,7 @@ def main():
     for path in ADMIN_FILES:
         replace_admin_literals(path, sources)
 
-    ensure_admin_helper()
+    ensure_admin_helpers()
     ensure_unified_css()
 
     print('Migrated %d admin language strings into language files.' % len(sources))
