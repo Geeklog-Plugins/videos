@@ -149,7 +149,7 @@ $html .= videos_moderation_table(
 $html .= '</div>';
 
 echo COM_createHTMLDocument(
-    $html,
+    VIDEOS_adminRender($html),
     array(
         'pagetitle' => $LANG_VIDEOS['moderation_title'],
         'headercode' => VIDEOS_adminHeaderCode()

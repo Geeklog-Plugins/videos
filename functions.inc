@@ -614,6 +614,22 @@ function VIDEOS_adminText($key)
     return (string) $key;
 }
 
+function VIDEOS_adminRender($text)
+{
+    global $LANG_VIDEOS_ADMIN;
+
+    if (!isset($LANG_VIDEOS_ADMIN) || !is_array($LANG_VIDEOS_ADMIN) || $text === '') {
+        return $text;
+    }
+
+    $replace = array();
+    foreach ($LANG_VIDEOS_ADMIN as $key => $value) {
+        $replace['{{videos_admin_' . $key . '}}'] = $value;
+    }
+
+    return strtr((string) $text, $replace);
+}
+
 function VIDEOS_localizeAdminText($text)
 {
     global $LANG_VIDEOS_ADMIN_TEXT;
