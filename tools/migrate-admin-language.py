@@ -105,22 +105,36 @@ def replace_language_block(path, pairs):
     path.write_text(text, encoding='utf-8')
 
 
+def replace_embedded_text_in_single_quoted_literals(text, sources):
+    pattern = re.compile(r"'((?:\\.|[^'])*)'")
+
+    def repl(match):
+        content = match.group(1)
+        original = content
+        for source in sorted(sources, key=len, reverse=True):
+            raw = php_escape(source)
+            if raw in content:
+                content = content.replace(raw, token_for(source))
+        if content == original:
+            return match.group(0)
+        return "'" + content + "'"
+
+    return pattern.sub(repl, text)
+
+
 def replace_admin_literals(path, sources):
     text = path.read_text(encoding='utf-8')
 
     # Exact PHP literals become direct lookups, useful for messages, comparisons
-    # and button labels passed as function arguments.
+    # and labels passed as function arguments.
     for source in sorted(sources, key=len, reverse=True):
         literal = "'" + php_escape(source) + "'"
         replacement = "VIDEOS_adminText('%s')" % key_for(source)
         text = text.replace(literal, replacement)
 
-    # Text embedded inside larger HTML strings becomes a language token. This
-    # removes user-facing prose from admin PHP without restructuring every
-    # concatenated HTML fragment.
-    for source in sorted(sources, key=len, reverse=True):
-        if source in text:
-            text = text.replace(source, token_for(source))
+    # Embedded prose is replaced only inside PHP single-quoted string literals.
+    # This deliberately avoids class names, function names and variables.
+    text = replace_embedded_text_in_single_quoted_literals(text, sources)
 
     text = text.replace('$html = VIDEOS_localizeAdminText($html);', '')
     text = text.replace(
@@ -260,7 +274,6 @@ def main():
         text = path.read_text(encoding='utf-8')
         language_pairs[name] = extract_admin_pairs(text)
 
-    # Recent dashboard strings were introduced after the legacy translation map.
     language_pairs['english.php'].update(EXTRA)
     language_pairs['french_france.php'].update({key: key for key in EXTRA})
 
