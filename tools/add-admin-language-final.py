@@ -21,12 +21,14 @@ for path, values in FILES.items():
         start = text.index(MARKER)
         finish = text.index(END, start) + len(END)
         text = text[:start] + text[finish:].lstrip('\n')
-    lines = [MARKER]
+
+    lines = [MARKER, '$LANG_VIDEOS_ADMIN = array_merge($LANG_VIDEOS_ADMIN, array(']
     for key, value in values.items():
         value = value.replace('\\', '\\\\').replace("'", "\\'")
-        lines.append("$LANG_VIDEOS_ADMIN['%s'] = '%s';" % (key, value))
-    lines.append(END)
+        lines.append("    '%s' => '%s'," % (key, value))
+    lines.extend(['));', END])
     block = '\n'.join(lines) + '\n\n'
+
     pos = text.find('$LANG_VIDEOS_FAQ = array(')
     if pos < 0:
         raise RuntimeError('FAQ marker missing: %s' % path)
