@@ -30,7 +30,7 @@
     aspect-ratio: 16 / 9;
     align-items: center;
     justify-content: center;
-    background: radial-gradient(circle at center, rgba(0, 0, 0, .72) 0 2rem, transparent 2.05rem);
+    background: radial-gradient(circle at center, #ff0000 0 2rem, transparent 2.05rem);
     color: #fff;
     font-size: 1.7rem;
     line-height: 1;
@@ -60,7 +60,7 @@
 
 .videos-autotag-card > a:hover::before,
 .videos-autotag-card > a:focus::before {
-    background: radial-gradient(circle at center, rgba(204, 0, 0, .92) 0 2rem, transparent 2.05rem);
+    background: radial-gradient(circle at center, #cc0000 0 2rem, transparent 2.05rem);
 }
 
 .videos-autotag-card > a:hover img,
@@ -104,12 +104,12 @@
     }
 
     .videos-autotag-card > a::before {
-        background: radial-gradient(circle at center, rgba(0, 0, 0, .72) 0 1.6rem, transparent 1.65rem);
+        background: radial-gradient(circle at center, #ff0000 0 1.6rem, transparent 1.65rem);
         font-size: 1.35rem;
     }
 
     .videos-autotag-card > a:hover::before,
     .videos-autotag-card > a:focus::before {
-        background: radial-gradient(circle at center, rgba(204, 0, 0, .92) 0 1.6rem, transparent 1.65rem);
+        background: radial-gradient(circle at center, #cc0000 0 1.6rem, transparent 1.65rem);
     }
 }
