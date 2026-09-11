@@ -55,7 +55,21 @@ def php_escape(value):
     return value.replace('\\', '\\\\').replace("'", "\\'")
 
 
+def strip_generated_language_block(text):
+    if BEGIN in text and END in text:
+        return re.sub(
+            re.escape(BEGIN) + r'.*?' + re.escape(END) + r'\s*',
+            '',
+            text,
+            flags=re.S,
+        )
+    return text
+
+
 def extract_admin_pairs(text):
+    # Never feed the generated $LANG_VIDEOS_ADMIN array back into the source
+    # corpus. Only the legacy translation map is authoritative input.
+    text = strip_generated_language_block(text)
     start = text.find('$LANG_VIDEOS_ADMIN_TEXT')
     end = text.find('$LANG_VIDEOS_FAQ', start)
     if start < 0 or end < 0:
@@ -66,7 +80,7 @@ def extract_admin_pairs(text):
     for source, target in pattern.findall(block):
         source = php_unescape(source)
         target = php_unescape(target)
-        if source:
+        if source and not source.startswith('text_'):
             pairs[source] = target
     return pairs
 
@@ -105,11 +119,39 @@ def replace_language_block(path, pairs):
     path.write_text(text, encoding='utf-8')
 
 
+def normalize_existing_migration(text):
+    # Collapse accidental nested calls from older migration runs.
+    previous = None
+    while previous != text:
+        previous = text
+        text = re.sub(
+            r"VIDEOS_adminText\(VIDEOS_adminText\('([^']+)'\)\)",
+            r"VIDEOS_adminText('\1')",
+            text,
+        )
+
+    # Collapse accidental nested tokens such as
+    # {{videos_admin_{{videos_admin_text_x}}}}.
+    text = re.sub(
+        r"\{\{videos_admin_\{\{videos_admin_(text_[0-9a-f]{12})\}\}\}\}",
+        r"{{videos_admin_\1}}",
+        text,
+    )
+    return text
+
+
 def replace_embedded_text_in_single_quoted_literals(text, sources):
     pattern = re.compile(r"'((?:\\.|[^'])*)'")
 
     def repl(match):
         content = match.group(1)
+        # Do not migrate keys already used by VIDEOS_adminText().
+        if re.fullmatch(r'text_[0-9a-f]{12}', content):
+            return match.group(0)
+        # Do not touch existing generated tokens.
+        if '{{videos_admin_text_' in content:
+            return match.group(0)
+
         original = content
         for source in sorted(sources, key=len, reverse=True):
             raw = php_escape(source)
@@ -123,18 +165,17 @@ def replace_embedded_text_in_single_quoted_literals(text, sources):
 
 
 def replace_admin_literals(path, sources):
-    text = path.read_text(encoding='utf-8')
+    text = normalize_existing_migration(path.read_text(encoding='utf-8'))
 
-    # Exact PHP literals become direct lookups, useful for messages, comparisons
-    # and labels passed as function arguments.
+    # Exact PHP literals become direct lookups. Skip strings already converted.
     for source in sorted(sources, key=len, reverse=True):
         literal = "'" + php_escape(source) + "'"
         replacement = "VIDEOS_adminText('%s')" % key_for(source)
         text = text.replace(literal, replacement)
 
-    # Embedded prose is replaced only inside PHP single-quoted string literals.
-    # This deliberately avoids class names, function names and variables.
+    # Embedded prose is replaced only inside PHP single-quoted strings.
     text = replace_embedded_text_in_single_quoted_literals(text, sources)
+    text = normalize_existing_migration(text)
 
     text = text.replace('$html = VIDEOS_localizeAdminText($html);', '')
     text = text.replace(
@@ -144,6 +185,11 @@ def replace_admin_literals(path, sources):
     text = text.replace(
         'COM_createHTMLDocument(\n        $html,',
         'COM_createHTMLDocument(\n        VIDEOS_adminRender($html),'
+    )
+    # Do not double-wrap rendering on future runs.
+    text = text.replace(
+        'VIDEOS_adminRender(VIDEOS_adminRender($html))',
+        'VIDEOS_adminRender($html)'
     )
     path.write_text(text, encoding='utf-8')
 
@@ -292,7 +338,7 @@ def main():
     ensure_admin_helpers()
     ensure_unified_css()
 
-    print('Migrated %d admin language strings into language files.' % len(sources))
+    print('Migrated %d admin language strings into language files.')
 
 
 if __name__ == '__main__':
