@@ -62,7 +62,7 @@
     width: 4rem;
     height: 4rem;
     border-radius: 50%;
-    background: #ff0000;
+    background: #ff0000 !important;
     color: #fff;
     font-size: 1.65rem;
     line-height: 1;
@@ -79,7 +79,7 @@
 .videos-history-card > a:focus::before,
 .videos-ranking-thumbnail:hover::before,
 .videos-ranking-thumbnail:focus-within::before {
-    background: #cc0000;
+    background: #cc0000 !important;
     transform: translate(-50%, -50%) scale(1.08);
 }
 
