@@ -34,12 +34,33 @@ jobs:
           grep -Fq 'VIDEOS ADMIN UNIFIED UI 0.19.0' public_html/css/admin.css
 
       - name: Lint PHP sources
+        id: lint
         shell: bash
         run: |
-          set -euo pipefail
+          set +e
+          : > lint-report.txt
+          status=0
           while IFS= read -r -d '' file; do
-            php -l "$file" >/dev/null
+            output=$(php -l "$file" 2>&1)
+            code=$?
+            if [ "$code" -ne 0 ]; then
+              status=1
+              printf '%s\n%s\n\n' "$file" "$output" >> lint-report.txt
+            fi
           done < <(find . -type f \( -name '*.php' -o -name '*.inc' \) -not -path './.git/*' -not -path './dist/*' -print0)
+          if [ "$status" -ne 0 ]; then
+            cat lint-report.txt
+            exit 1
+          fi
+          rm -f lint-report.txt
+
+      - name: Upload lint diagnostics
+        if: failure() && steps.lint.outcome == 'failure'
+        uses: actions/upload-artifact@v4
+        with:
+          name: videos-admin-lint-report
+          path: lint-report.txt
+          if-no-files-found: ignore
 
       - name: Validate admin localization
         shell: bash
