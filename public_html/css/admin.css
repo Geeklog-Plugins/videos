@@ -267,3 +267,170 @@ body .ui-tooltip-content{white-space:normal;overflow-wrap:anywhere;line-height:1
 @media(max-width:960px){.videos-admin-metrics{grid-template-columns:repeat(3,minmax(0,1fr))}.videos-admin-integration-grid{grid-template-columns:1fr}}
 @media(max-width:700px){.videos-admin-intro{align-items:stretch;flex-direction:column}.videos-admin-quick-links{justify-content:flex-start}}
 @media(max-width:640px){.videos-admin .videos-navigation ul{overflow-x:auto;flex-wrap:nowrap}.videos-admin .videos-navigation a{white-space:nowrap}.videos-admin-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.videos-admin-quick-links,.videos-admin-button{width:100%;box-sizing:border-box}}
+
+/* Harmonized shell for Overview, Actions, Statistics and Moderation. */
+.videos-admin:not(.block-center) {
+    overflow: hidden;
+    border: 1px solid rgba(127, 127, 127, .22);
+    border-radius: .65rem;
+    background: rgba(255, 255, 255, .01);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, .035);
+}
+
+.videos-admin:not(.block-center) > h1 {
+    margin: 0;
+    padding: 1.05rem 1.4rem;
+    border-bottom: 1px solid rgba(127, 127, 127, .2);
+    background: rgba(47, 91, 210, .045);
+    font-size: 1.35rem;
+    line-height: 1.25;
+}
+
+.videos-admin:not(.block-center) > .videos-navigation {
+    margin: 0 0 1.25rem;
+    padding: 0 1.15rem;
+}
+
+.videos-admin:not(.block-center) > .videos-admin-section,
+.videos-admin:not(.block-center) > .videos-admin-help,
+.videos-admin:not(.block-center) > .uk-alert,
+.videos-admin:not(.block-center) > .alert,
+.videos-admin:not(.block-center) > p,
+.videos-admin:not(.block-center) > details {
+    margin-left: 1.15rem;
+    margin-right: 1.15rem;
+}
+
+.videos-admin-section,
+.videos-admin-panel {
+    border-color: rgba(127, 127, 127, .2);
+    border-radius: .5rem;
+    background: rgba(127, 127, 127, .018);
+    box-shadow: none;
+}
+
+.videos-admin-section {
+    padding: 1rem;
+}
+
+.videos-admin-section > h2 {
+    margin: 0 0 .85rem;
+    padding-bottom: .6rem;
+    border-bottom-color: rgba(127, 127, 127, .18);
+    font-size: 1.05rem;
+}
+
+.videos-admin-section > p:first-of-type {
+    margin-top: 0;
+    color: inherit;
+    opacity: .8;
+}
+
+.videos-admin-form + .videos-admin-form {
+    margin-top: .85rem;
+}
+
+.videos-admin-form input[type="text"],
+.videos-admin-form input[type="password"],
+.videos-admin-form select {
+    border-color: rgba(127, 127, 127, .34);
+    border-radius: .42rem;
+    background: rgba(255, 255, 255, .03);
+}
+
+.videos-admin-form input[type="text"]:focus,
+.videos-admin-form input[type="password"]:focus,
+.videos-admin-form select:focus {
+    border-color: rgba(47, 91, 210, .65);
+    outline: 2px solid rgba(47, 91, 210, .12);
+    outline-offset: 1px;
+}
+
+.videos-admin button,
+.videos-admin input[type="submit"] {
+    min-height: 2.4rem;
+    padding: .45rem .8rem;
+    border: 1px solid rgba(127, 127, 127, .3);
+    border-radius: .42rem;
+    background: rgba(127, 127, 127, .07);
+    color: inherit;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.videos-admin button:hover,
+.videos-admin button:focus,
+.videos-admin input[type="submit"]:hover,
+.videos-admin input[type="submit"]:focus {
+    background: rgba(127, 127, 127, .13);
+}
+
+.videos-admin-table {
+    border: 1px solid rgba(127, 127, 127, .18);
+    border-radius: .4rem;
+    overflow: hidden;
+}
+
+.videos-admin-table th {
+    background: rgba(127, 127, 127, .075);
+    font-size: .86rem;
+    letter-spacing: .01em;
+}
+
+.videos-admin-table td {
+    line-height: 1.4;
+}
+
+.videos-admin-table tbody tr:nth-child(even) {
+    background: rgba(127, 127, 127, .025);
+}
+
+.videos-admin-table tbody tr:hover {
+    background: rgba(47, 91, 210, .035);
+}
+
+.videos-admin code {
+    font-size: .88em;
+    opacity: .8;
+}
+
+.videos-admin .videos-advanced-field {
+    margin-top: .8rem;
+    border-style: solid;
+    border-color: rgba(127, 127, 127, .2);
+    background: rgba(127, 127, 127, .025);
+}
+
+.videos-admin .videos-advanced-field > summary {
+    cursor: pointer;
+    font-weight: 600;
+}
+
+.videos-admin .videos-stat-card,
+.videos-admin .videos-integration-grid > div,
+.videos-admin .videos-admin-result {
+    border-color: rgba(127, 127, 127, .18) !important;
+    border-radius: .45rem !important;
+    background: rgba(127, 127, 127, .035) !important;
+    box-shadow: none !important;
+}
+
+@media (max-width: 640px) {
+    .videos-admin:not(.block-center) {
+        border-radius: .45rem;
+    }
+
+    .videos-admin:not(.block-center) > h1 {
+        padding: .9rem 1rem;
+        font-size: 1.2rem;
+    }
+
+    .videos-admin:not(.block-center) > .videos-navigation,
+    .videos-admin:not(.block-center) > .videos-admin-section,
+    .videos-admin:not(.block-center) > .videos-admin-help,
+    .videos-admin:not(.block-center) > p,
+    .videos-admin:not(.block-center) > details {
+        margin-left: .75rem;
+        margin-right: .75rem;
+    }
+}
