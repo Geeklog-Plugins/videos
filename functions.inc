@@ -614,13 +614,34 @@ function VIDEOS_stylesheetLink($file)
 {
     global $_CONF;
 
+    $version = VIDEOS_PLUGIN_VERSION;
+    $cssPath = '';
+
+    if (!empty($_CONF['path_html'])) {
+        $cssPath = rtrim($_CONF['path_html'], '/\\')
+            . '/videos/css/' . $file;
+    }
+
+    if ($cssPath === '' || !is_file($cssPath)) {
+        $cssPath = rtrim($_CONF['path'], '/\\')
+            . '/plugins/videos/public_html/css/' . $file;
+    }
+
+    if (is_file($cssPath)) {
+        clearstatcache(true, $cssPath);
+        $modified = @filemtime($cssPath);
+        if ($modified !== false && $modified > 0) {
+            $version .= '-' . (int) $modified;
+        }
+    }
+
     return '<link rel="stylesheet" type="text/css" href="'
         . htmlspecialchars(
             rtrim($_CONF['site_url'], '/') . '/videos/css/' . $file,
             ENT_QUOTES,
             'UTF-8'
         )
-        . '?v=' . rawurlencode(VIDEOS_PLUGIN_VERSION) . '">' . "\n";
+        . '?v=' . rawurlencode($version) . '">' . "\n";
 }
 
 function plugin_getheadercode_videos()
