@@ -199,6 +199,8 @@ $LANG_VIDEOS = array(
     'video_about_title' => 'À propos de cette vidéo'
 );
 
+
+
 // 0.19.0 unified admin interface strings
 $LANG_VIDEOS['admin_actions_column'] = 'Actions';
 $LANG_VIDEOS['admin_cache_label'] = 'Cache';
