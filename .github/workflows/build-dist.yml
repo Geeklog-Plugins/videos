@@ -27,53 +27,13 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          python3 <<'PY'
-          from pathlib import Path
-
-          for name in ('videos.css', 'autotag.css', 'block.css'):
-              path = Path('public_html/css') / name
-              text = path.read_text(encoding='utf-8')
-              text = text.replace('#ff0000', '#e62117')
-              text = text.replace('#cc0000', '#c51f17')
-              path.write_text(text, encoding='utf-8')
-
-          path = Path('functions.inc')
-          text = path.read_text(encoding='utf-8')
-          old = """    if (is_file($cssPath)) {
-        clearstatcache(true, $cssPath);
-        $modified = @filemtime($cssPath);
-        if ($modified !== false && $modified > 0) {
-            $version .= '-' . (int) $modified;
-        }
-    }
-"""
-          new = """    $modified = false;
-    if (is_file($cssPath)) {
-        clearstatcache(true, $cssPath);
-        $modified = @filemtime($cssPath);
-    }
-
-    if ($modified === false || $modified <= 0) {
-        clearstatcache(true, __FILE__);
-        $modified = @filemtime(__FILE__);
-    }
-
-    if ($modified !== false && $modified > 0) {
-        $version .= '-' . (int) $modified;
-    }
-"""
-          if new not in text:
-              if old not in text:
-                  raise SystemExit('Unable to locate CSS timestamp block')
-              text = text.replace(old, new, 1)
-          path.write_text(text, encoding='utf-8')
-          PY
-
+          sed -i 's/#ff0000/#e62117/g; s/#cc0000/#c51f17/g' public_html/css/videos.css public_html/css/autotag.css public_html/css/block.css
+          sed -i "s/\$version = VIDEOS_PLUGIN_VERSION;/\$version = VIDEOS_PLUGIN_VERSION . '-' . (int) @filemtime(__FILE__);/" functions.inc
           php -l functions.inc
           grep -F '#e62117' public_html/css/videos.css
           grep -F '#e62117' public_html/css/autotag.css
           grep -F '#e62117' public_html/css/block.css
-          grep -F 'filemtime(__FILE__)' functions.inc
+          grep -F "VIDEOS_PLUGIN_VERSION . '-' . (int) @filemtime(__FILE__)" functions.inc
 
       - name: Lint PHP sources
         shell: bash
@@ -99,7 +59,7 @@ jobs:
           unzip -p "dist/${ARCHIVE}" videos/public_html/css/videos.css | grep -Fq '#e62117'
           unzip -p "dist/${ARCHIVE}" videos/public_html/css/autotag.css | grep -Fq '#e62117'
           unzip -p "dist/${ARCHIVE}" videos/public_html/css/block.css | grep -Fq '#e62117'
-          unzip -p "dist/${ARCHIVE}" videos/functions.inc | grep -Fq 'filemtime(__FILE__)'
+          unzip -p "dist/${ARCHIVE}" videos/functions.inc | grep -Fq "VIDEOS_PLUGIN_VERSION . '-' . (int) @filemtime(__FILE__)"
 
       - name: Commit normalized sources and archive
         shell: bash
