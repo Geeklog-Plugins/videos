@@ -113,3 +113,33 @@
         background: radial-gradient(circle at center, #c51f17 0 1.6rem, transparent 1.65rem) !important;
     }
 }
+/* VIDEOS MODERN PLAY BUTTON 0.19.0 */
+.videos-autotag-card > a::before {
+    top: calc((100% - 3.2rem) * .5 * 9 / 16);
+    left: 50%;
+    width: 42px;
+    height: 30px;
+    aspect-ratio: auto;
+    border-radius: 8px;
+    background: rgba(204, 0, 0, .92) !important;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, .22);
+    font-size: 13px;
+    text-indent: 1px;
+    text-shadow: none;
+    transform: translate(-50%, -50%);
+    transition: transform .16s ease, background-color .16s ease, box-shadow .16s ease;
+}
+.videos-autotag-card > a:hover::before,
+.videos-autotag-card > a:focus::before {
+    background: #b80000 !important;
+    box-shadow: 0 3px 8px rgba(0, 0, 0, .26);
+    transform: translate(-50%, -50%) scale(1.04);
+}
+@media (max-width: 600px) {
+    .videos-autotag-card > a::before {
+        width: 40px;
+        height: 28px;
+        border-radius: 7px;
+        font-size: 12px;
+    }
+}
