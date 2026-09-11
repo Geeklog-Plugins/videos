@@ -31,12 +31,18 @@ jobs:
           grep -Fq 'function VIDEOS_adminNavigation($active)' functions.inc
           grep -Fq 'function VIDEOS_adminPageOpen($active, $pageTitle)' functions.inc
           grep -Fq 'VIDEOS ADMIN UNIFIED UI 0.19.0' public_html/css/admin.css
+          grep -Fq "admin_remove_help" language/english.php
+          grep -Fq "admin_remove_help" language/french_france.php
           if grep -R -nF '{{videos_admin_' admin; then
             echo 'Unresolved Videos admin language token found.' >&2
             exit 1
           fi
           if grep -R -nE 'videos_(overview_nav|admin_section_nav|stats_nav|moderation_nav)\(' admin; then
             echo 'Legacy per-page navigation helper found.' >&2
+            exit 1
+          fi
+          if grep -Fq 'function VIDEOS_adminRender(' functions.inc; then
+            echo 'Legacy admin token renderer still exists.' >&2
             exit 1
           fi
 
@@ -75,10 +81,7 @@ jobs:
           set -euo pipefail
           for file in admin/index.php admin/actions.php admin/stats.php admin/moderation.php; do
             grep -Fq 'VIDEOS_adminPageOpen(' "$file"
-            if grep -nF 'VIDEOS_adminRender($html)' "$file"; then
-              echo "Legacy token renderer remains in $file" >&2
-              exit 1
-            fi
+            grep -Fq 'VIDEOS_adminPageClose()' "$file"
           done
           grep -Fq 'VIDEOS_adminText(' admin/index.php
           grep -Fq 'VIDEOS_adminText(' admin/actions.php
@@ -130,11 +133,12 @@ jobs:
           git add \
             admin/index.php admin/actions.php admin/stats.php admin/moderation.php \
             functions.inc \
+            language/english.php language/french_france.php \
             public_html/css/admin.css \
             tools/normalize-admin-ui.py \
             dist
           if git diff --cached --quiet; then
             exit 0
           fi
-          git commit -m "Flatten and unify Videos admin interface"
+          git commit -m "Simplify and unify Videos admin interface"
           git push origin "HEAD:${GITHUB_REF_NAME}"
