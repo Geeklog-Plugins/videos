@@ -23,41 +23,15 @@ jobs:
       - name: Synchronize branch
         run: git pull --ff-only origin "${GITHUB_REF_NAME}"
 
-      - name: Normalize sources
+      - name: Normalize admin language and UI
         shell: bash
         run: |
           set -euo pipefail
-          sed -i 's/#ff0000/#e62117/g; s/#cc0000/#c51f17/g' public_html/css/videos.css public_html/css/autotag.css public_html/css/block.css
-          sed -i "s/\$version = VIDEOS_PLUGIN_VERSION;/\$version = VIDEOS_PLUGIN_VERSION . '-' . (int) @filemtime(__FILE__);/" functions.inc
-
-          if ! grep -Fq '$isVideosConfig' functions.inc; then
-            printf '%s' 'PD9waHAKJHBhdGggPSAnZnVuY3Rpb25zLmluYyc7CiR0ZXh0ID0gZmlsZV9nZXRfY29udGVudHMoJHBhdGgpOwppZiAoc3RycG9zKCR0ZXh0LCAnJGlzVmlkZW9zQ29uZmlnJykgPT09IGZhbHNlKSB7CiAgICAkb2xkID0gPDw8J09MRCcKICAgICRoZWFkZXIgPSAnJzsKICAgICRpc0FkbWluID0gc3RycG9zKCRwYXRoLCAnL2FkbWluL3BsdWdpbnMvdmlkZW9zLycpICE9PSBmYWxzZTsKICAgICRpc1B1YmxpY1ZpZGVvcyA9ICEkaXNBZG1pbiAmJiBzdHJwb3MoJHBhdGgsICcvdmlkZW9zLycpICE9PSBmYWxzZTsKCiAgICBpZiAoJGlzUHVibGljVmlkZW9zKSB7CiAgICAgICAgJGhlYWRlciAuPSBWSURFT1Nfc3R5bGVzaGVldExpbmsoJ3ZpZGVvcy5jc3MnKTsKICAgIH0KICAgIGlmICgkaXNBZG1pbikgewogICAgICAgICRoZWFkZXIgLj0gVklERU9TX3N0eWxlc2hlZXRMaW5rKCdhZG1pbi5jc3MnKTsKICAgIH0KT0xEOwogICAgJG5ldyA9IDw8PCdORVcnCiAgICAkaGVhZGVyID0gJyc7CiAgICAkaXNBZG1pbiA9IHN0cnBvcygkcGF0aCwgJy9hZG1pbi9wbHVnaW5zL3ZpZGVvcy8nKSAhPT0gZmFsc2U7CiAgICAkaXNWaWRlb3NDb25maWcgPSBzdHJwb3MoJHBhdGgsICcvYWRtaW4vY29uZmlndXJhdGlvbi5waHAnKSAhPT0gZmFsc2UKICAgICAgICAmJiBpc3NldCgkX0dFVFsnY29uZl9ncm91cCddKQogICAgICAgICYmIChzdHJpbmcpICRfR0VUWydjb25mX2dyb3VwJ10gPT09ICd2aWRlb3MnOwogICAgJGlzUHVibGljVmlkZW9zID0gISRpc0FkbWluICYmICEkaXNWaWRlb3NDb25maWcKICAgICAgICAmJiBzdHJwb3MoJHBhdGgsICcvdmlkZW9zLycpICE9PSBmYWxzZTsKCiAgICBpZiAoJGlzUHVibGljVmlkZW9zKSB7CiAgICAgICAgJGhlYWRlciAuPSBWSURFT1Nfc3R5bGVzaGVldExpbmsoJ3ZpZGVvcy5jc3MnKTsKICAgIH0KICAgIGlmICgkaXNBZG1pbiB8fCAkaXNWaWRlb3NDb25maWcpIHsKICAgICAgICAkaGVhZGVyIC49IFZJREVPU19zdHlsZXNoZWV0TGluaygnYWRtaW4uY3NzJyk7CiAgICB9Ck5FVzsKICAgIGlmIChzdHJwb3MoJHRleHQsICRvbGQpID09PSBmYWxzZSkgewogICAgICAgIGZ3cml0ZShTVERFUlIsICJVbmFibGUgdG8gbG9jYXRlIGhlYWRlciBDU1Mgcm91dGluZyBibG9ja1xuIik7CiAgICAgICAgZXhpdCgxKTsKICAgIH0KICAgICR0ZXh0ID0gc3RyX3JlcGxhY2UoJG9sZCwgJG5ldywgJHRleHQpOwp9CmZpbGVfcHV0X2NvbnRlbnRzKCRwYXRoLCAkdGV4dCk7Cg==' | base64 -d > /tmp/videos-functions-patch.php
-            php /tmp/videos-functions-patch.php
-          fi
-
-          if ! grep -Fq 'VIDEOS ADMIN DASHBOARD 0.19.0' public_html/css/admin.css; then
-            printf '%s' 'Ci8qIFZJREVPUyBBRE1JTiBEQVNIQk9BUkQgMC4xOS4wICovCi52aWRlb3MtYWRtaW4gLmJsb2NrLWNvbnRlbnR7cGFkZGluZy10b3A6MH0KLnZpZGVvcy1hZG1pbiAudmlkZW9zLW5hdmlnYXRpb257bWFyZ2luOjAgLTFyZW0gMS40cmVtO3BhZGRpbmc6MCAxcmVtO2JvcmRlci1ib3R0b206MXB4IHNvbGlkIHJnYmEoMTI3LDEyNywxMjcsLjI0KTtiYWNrZ3JvdW5kOnJnYmEoMTI3LDEyNywxMjcsLjAyKX0KLnZpZGVvcy1hZG1pbiAudmlkZW9zLW5hdmlnYXRpb24gYXtwb3NpdGlvbjpyZWxhdGl2ZTtwYWRkaW5nOi43OHJlbSAuOTVyZW19Ci52aWRlb3MtYWRtaW4gLnZpZGVvcy1uYXZpZ2F0aW9uIGE6aG92ZXIsLnZpZGVvcy1hZG1pbiAudmlkZW9zLW5hdmlnYXRpb24gYTpmb2N1c3tiYWNrZ3JvdW5kOnJnYmEoMTI3LDEyNywxMjcsLjA3KTt0ZXh0LWRlY29yYXRpb246bm9uZX0KLnZpZGVvcy1hZG1pbiAudmlkZW9zLW5hdmlnYXRpb24gYS5pcy1hY3RpdmV7YmFja2dyb3VuZDp0cmFuc3BhcmVudDtmb250LXdlaWdodDo3MDA7dGV4dC1kZWNvcmF0aW9uOm5vbmV9Ci52aWRlb3MtYWRtaW4gLnZpZGVvcy1uYXZpZ2F0aW9uIGEuaXMtYWN0aXZlOjphZnRlcntjb250ZW50OiIiO3Bvc2l0aW9uOmFic29sdXRlO2xlZnQ6LjdyZW07cmlnaHQ6LjdyZW07Ym90dG9tOi0xcHg7aGVpZ2h0OjNweDtib3JkZXItcmFkaXVzOjk5OXB4IDk5OXB4IDAgMDtiYWNrZ3JvdW5kOmN1cnJlbnRDb2xvcn0KLnZpZGVvcy1hZG1pbi1kYXNoYm9hcmR7ZGlzcGxheTpncmlkO2dhcDoxLjE1cmVtfQoudmlkZW9zLWFkbWluLWludHJve2Rpc3BsYXk6ZmxleDthbGlnbi1pdGVtczpjZW50ZXI7anVzdGlmeS1jb250ZW50OnNwYWNlLWJldHdlZW47Z2FwOjFyZW0gMnJlbX0KLnZpZGVvcy1hZG1pbi1pbnRybyBoMnttYXJnaW46MCAwIC4zcmVtO2ZvbnQtc2l6ZToxLjNyZW19Ci52aWRlb3MtYWRtaW4taW50cm8gcHttYXJnaW46MDtvcGFjaXR5Oi43Mn0KLnZpZGVvcy1hZG1pbi1xdWljay1saW5rc3tkaXNwbGF5OmZsZXg7ZmxleC13cmFwOndyYXA7anVzdGlmeS1jb250ZW50OmZsZXgtZW5kO2dhcDouNXJlbX0KLnZpZGVvcy1hZG1pbi1idXR0b257ZGlzcGxheTppbmxpbmUtZmxleDthbGlnbi1pdGVtczpjZW50ZXI7anVzdGlmeS1jb250ZW50OmNlbnRlcjttaW4taGVpZ2h0OjIuMzVyZW07cGFkZGluZzouNDJyZW0gLjc4cmVtO2JvcmRlcjoxcHggc29saWQgcmdiYSgxMjcsMTI3LDEyNywuMyk7Ym9yZGVyLXJhZGl1czouNHJlbTtiYWNrZ3JvdW5kOnJnYmEoMTI3LDEyNywxMjcsLjA1NSk7Y29sb3I6aW5oZXJpdDtmb250LXdlaWdodDo2MDA7dGV4dC1kZWNvcmF0aW9uOm5vbmV9Ci52aWRlb3MtYWRtaW4tYnV0dG9uOmhvdmVyLC52aWRlb3MtYWRtaW4tYnV0dG9uOmZvY3Vze2JhY2tncm91bmQ6cmdiYSgxMjcsMTI3LDEyNywuMTEpO3RleHQtZGVjb3JhdGlvbjpub25lfQoudmlkZW9zLWFkbWluLWJ1dHRvbi1wcmltYXJ5e2JvcmRlci1jb2xvcjpyZ2JhKDQ3LDkxLDIxMCwuNCk7YmFja2dyb3VuZDpyZ2JhKDQ3LDkxLDIxMCwuMDkpfQoudmlkZW9zLWFkbWluLXBhbmVse3BhZGRpbmc6MXJlbTtib3JkZXI6MXB4IHNvbGlkIHJnYmEoMTI3LDEyNywxMjcsLjIpO2JvcmRlci1yYWRpdXM6LjVyZW07YmFja2dyb3VuZDpyZ2JhKDEyNywxMjcsMTI3LC4wMTUpfQoudmlkZW9zLWFkbWluLXBhbmVsLWhlYWRpbmd7ZGlzcGxheTpmbGV4O2FsaWduLWl0ZW1zOmJhc2VsaW5lO2p1c3RpZnktY29udGVudDpzcGFjZS1iZXR3ZWVuO2dhcDoxcmVtO21hcmdpbi1ib3R0b206LjhyZW19Ci52aWRlb3MtYWRtaW4tcGFuZWwtaGVhZGluZyBoMnttYXJnaW46MDtmb250LXNpemU6MS4wNXJlbX0KLnZpZGVvcy1hZG1pbi1wYW5lbC1oZWFkaW5nIGF7Zm9udC1zaXplOi44OHJlbX0KLnZpZGVvcy1hZG1pbi1tZXRyaWNze2Rpc3BsYXk6Z3JpZDtncmlkLXRlbXBsYXRlLWNvbHVtbnM6cmVwZWF0KDYsbWlubWF4KDAsMWZyKSk7Z2FwOi42cmVtfQoudmlkZW9zLWFkbWluLW1ldHJpY3twYWRkaW5nOi44cmVtIC42NXJlbTtib3JkZXItcmFkaXVzOi40cmVtO2JhY2tncm91bmQ6cmdiYSgxMjcsMTI3LDEyNywuMDcpO3RleHQtYWxpZ246Y2VudGVyfQoudmlkZW9zLWFkbWluLW1ldHJpYyBzdHJvbmd7ZGlzcGxheTpibG9jazttYXJnaW4tYm90dG9tOi4xNXJlbTtmb250LXNpemU6MS40cmVtO2xpbmUtaGVpZ2h0OjF9Ci52aWRlb3MtYWRtaW4tbWV0cmljIHNwYW57ZGlzcGxheTpibG9jaztvcGFjaXR5Oi43Njtmb250LXNpemU6LjhyZW07bGluZS1oZWlnaHQ6MS4yNX0KLnZpZGVvcy1hZG1pbi1pbnRlZ3JhdGlvbi1ncmlke2Rpc3BsYXk6Z3JpZDtncmlkLXRlbXBsYXRlLWNvbHVtbnM6cmVwZWF0KDMsbWlubWF4KDAsMWZyKSk7Z2FwOi42NXJlbX0KLnZpZGVvcy1hZG1pbi1pbnRlZ3JhdGlvbntkaXNwbGF5OmZsZXg7YWxpZ24taXRlbXM6ZmxleC1zdGFydDtqdXN0aWZ5LWNvbnRlbnQ6c3BhY2UtYmV0d2VlbjtnYXA6LjdyZW07cGFkZGluZzouNzVyZW07Ym9yZGVyLXJhZGl1czouNHJlbTtiYWNrZ3JvdW5kOnJnYmEoMTI3LDEyNywxMjcsLjA0NSl9Ci52aWRlb3MtYWRtaW4taW50ZWdyYXRpb24gaDN7bWFyZ2luOjAgMCAuMnJlbTtmb250LXNpemU6Ljk0cmVtfQoudmlkZW9zLWFkbWluLWludGVncmF0aW9uIHB7bWFyZ2luOjA7b3BhY2l0eTouNztmb250LXNpemU6LjgycmVtO2xpbmUtaGVpZ2h0OjEuNH0KLnZpZGVvcy1hZG1pbi1iYWRnZXtmbGV4OjAgMCBhdXRvO3BhZGRpbmc6LjE2cmVtIC40NXJlbTtib3JkZXItcmFkaXVzOjk5OXB4O2JhY2tncm91bmQ6cmdiYSg0MCwxMjIsNTAsLjEyKTtmb250LXNpemU6LjcycmVtO2ZvbnQtd2VpZ2h0OjcwMDt3aGl0ZS1zcGFjZTpub3dyYXB9Ci52aWRlb3MtYWRtaW4tcHVibGljLWxpbmtze2Rpc3BsYXk6ZmxleDtmbGV4LXdyYXA6d3JhcDthbGlnbi1pdGVtczpjZW50ZXI7Z2FwOi40cmVtIC44NXJlbTtwYWRkaW5nOi4xcmVtIC4xNXJlbSAuMzVyZW07Zm9udC1zaXplOi44NnJlbX0KLnZpZGVvcy1hZG1pbi1wdWJsaWMtbGlua3Mgc3BhbntvcGFjaXR5Oi42NX0KYm9keSAudWktdG9vbHRpcHttYXgtd2lkdGg6MzJyZW07ei1pbmRleDoxMDAwMH0KYm9keSAudWktdG9vbHRpcC1jb250ZW50e3doaXRlLXNwYWNlOm5vcm1hbDtvdmVyZmxvdy13cmFwOmFueXdoZXJlO2xpbmUtaGVpZ2h0OjEuNDV9CkBtZWRpYShtYXgtd2lkdGg6OTYwcHgpey52aWRlb3MtYWRtaW4tbWV0cmljc3tncmlkLXRlbXBsYXRlLWNvbHVtbnM6cmVwZWF0KDMsbWlubWF4KDAsMWZyKSl9LnZpZGVvcy1hZG1pbi1pbnRlZ3JhdGlvbi1ncmlke2dyaWQtdGVtcGxhdGUtY29sdW1uczoxZnJ9fQpAbWVkaWEobWF4LXdpZHRoOjcwMHB4KXsudmlkZW9zLWFkbWluLWludHJve2FsaWduLWl0ZW1zOnN0cmV0Y2g7ZmxleC1kaXJlY3Rpb246Y29sdW1ufS52aWRlb3MtYWRtaW4tcXVpY2stbGlua3N7anVzdGlmeS1jb250ZW50OmZsZXgtc3RhcnR9fQpAbWVkaWEobWF4LXdpZHRoOjY0MHB4KXsudmlkZW9zLWFkbWluIC52aWRlb3MtbmF2aWdhdGlvbiB1bHtvdmVyZmxvdy14OmF1dG87ZmxleC13cmFwOm5vd3JhcH0udmlkZW9zLWFkbWluIC52aWRlb3MtbmF2aWdhdGlvbiBhe3doaXRlLXNwYWNlOm5vd3JhcH0udmlkZW9zLWFkbWluLW1ldHJpY3N7Z3JpZC10ZW1wbGF0ZS1jb2x1bW5zOnJlcGVhdCgyLG1pbm1heCgwLDFmcikpfS52aWRlb3MtYWRtaW4tcXVpY2stbGlua3MsLnZpZGVvcy1hZG1pbi1idXR0b257d2lkdGg6MTAwJTtib3gtc2l6aW5nOmJvcmRlci1ib3h9fQo=' | base64 -d >> public_html/css/admin.css
-          fi
-
-          if ! grep -Fq 'VIDEOS MODERN PLAY BUTTON 0.19.0' public_html/css/videos.css; then
-            printf '%s' 'LyogVklERU9TIE1PREVSTiBQTEFZIEJVVFRPTiAwLjE5LjAgKi8KLnZpZGVvcy1jYXJkID4gYTo6YmVmb3JlLAoudmlkZW9zLWhpc3RvcnktY2FyZCA+IGE6OmJlZm9yZSwKLnZpZGVvcy1yYW5raW5nLXRodW1ibmFpbDo6YmVmb3JlIHsKICAgIHdpZHRoOiA0MnB4OwogICAgaGVpZ2h0OiAzMHB4OwogICAgYm9yZGVyLXJhZGl1czogOHB4OwogICAgYmFja2dyb3VuZDogcmdiYSgyMDQsIDAsIDAsIC45MikgIWltcG9ydGFudDsKICAgIGJveC1zaGFkb3c6IDAgMnB4IDZweCByZ2JhKDAsIDAsIDAsIC4yMik7CiAgICBmb250LXNpemU6IDEzcHg7CiAgICB0ZXh0LWluZGVudDogMXB4OwogICAgdGV4dC1zaGFkb3c6IG5vbmU7CiAgICB0cmFuc2Zvcm06IHRyYW5zbGF0ZSgtNTAlLCAtNTAlKTsKICAgIHRyYW5zaXRpb246IHRyYW5zZm9ybSAuMTZzIGVhc2UsIGJhY2tncm91bmQtY29sb3IgLjE2cyBlYXNlLCBib3gtc2hhZG93IC4xNnMgZWFzZTsKfQoudmlkZW9zLWNhcmQgPiBhOmhvdmVyOjpiZWZvcmUsCi52aWRlb3MtY2FyZCA+IGE6Zm9jdXM6OmJlZm9yZSwKLnZpZGVvcy1oaXN0b3J5LWNhcmQgPiBhOmhvdmVyOjpiZWZvcmUsCi52aWRlb3MtaGlzdG9yeS1jYXJkID4gYTpmb2N1czo6YmVmb3JlLAoudmlkZW9zLXJhbmtpbmctdGh1bWJuYWlsOmhvdmVyOjpiZWZvcmUsCi52aWRlb3MtcmFua2luZy10aHVtYm5haWw6Zm9jdXMtd2l0aGluOjpiZWZvcmUgewogICAgYmFja2dyb3VuZDogI2I4MDAwMCAhaW1wb3J0YW50OwogICAgYm94LXNoYWRvdzogMCAzcHggOHB4IHJnYmEoMCwgMCwgMCwgLjI2KTsKICAgIHRyYW5zZm9ybTogdHJhbnNsYXRlKC01MCUsIC01MCUpIHNjYWxlKDEuMDQpOwp9CkBtZWRpYSAobWF4LXdpZHRoOiA2MDBweCkgewogICAgLnZpZGVvcy1jYXJkID4gYTo6YmVmb3JlLAogICAgLnZpZGVvcy1oaXN0b3J5LWNhcmQgPiBhOjpiZWZvcmUsCiAgICAudmlkZW9zLXJhbmtpbmctdGh1bWJuYWlsOjpiZWZvcmUgewogICAgICAgIHdpZHRoOiA0MHB4OwogICAgICAgIGhlaWdodDogMjhweDsKICAgICAgICBib3JkZXItcmFkaXVzOiA3cHg7CiAgICAgICAgZm9udC1zaXplOiAxMnB4OwogICAgfQp9Cg==' | base64 -d >> public_html/css/videos.css
-            printf '%s' 'LyogVklERU9TIE1PREVSTiBQTEFZIEJVVFRPTiAwLjE5LjAgKi8KLnZpZGVvcy1hdXRvdGFnLWNhcmQgPiBhOjpiZWZvcmUgewogICAgdG9wOiBjYWxjKCgxMDAlIC0gMy4ycmVtKSAqIC41ICogOSAvIDE2KTsKICAgIGxlZnQ6IDUwJTsKICAgIHdpZHRoOiA0MnB4OwogICAgaGVpZ2h0OiAzMHB4OwogICAgYXNwZWN0LXJhdGlvOiBhdXRvOwogICAgYm9yZGVyLXJhZGl1czogOHB4OwogICAgYmFja2dyb3VuZDogcmdiYSgyMDQsIDAsIDAsIC45MikgIWltcG9ydGFudDsKICAgIGJveC1zaGFkb3c6IDAgMnB4IDZweCByZ2JhKDAsIDAsIDAsIC4yMik7CiAgICBmb250LXNpemU6IDEzcHg7CiAgICB0ZXh0LWluZGVudDogMXB4OwogICAgdGV4dC1zaGFkb3c6IG5vbmU7CiAgICB0cmFuc2Zvcm06IHRyYW5zbGF0ZSgtNTAlLCAtNTAlKTsKICAgIHRyYW5zaXRpb246IHRyYW5zZm9ybSAuMTZzIGVhc2UsIGJhY2tncm91bmQtY29sb3IgLjE2cyBlYXNlLCBib3gtc2hhZG93IC4xNnMgZWFzZTsKfQoudmlkZW9zLWF1dG90YWctY2FyZCA+IGE6aG92ZXI6OmJlZm9yZSwKLnZpZGVvcy1hdXRvdGFnLWNhcmQgPiBhOmZvY3VzOjpiZWZvcmUgewogICAgYmFja2dyb3VuZDogI2I4MDAwMCAhaW1wb3J0YW50OwogICAgYm94LXNoYWRvdzogMCAzcHggOHB4IHJnYmEoMCwgMCwgMCwgLjI2KTsKICAgIHRyYW5zZm9ybTogdHJhbnNsYXRlKC01MCUsIC01MCUpIHNjYWxlKDEuMDQpOwp9CkBtZWRpYSAobWF4LXdpZHRoOiA2MDBweCkgewogICAgLnZpZGVvcy1hdXRvdGFnLWNhcmQgPiBhOjpiZWZvcmUgewogICAgICAgIHdpZHRoOiA0MHB4OwogICAgICAgIGhlaWdodDogMjhweDsKICAgICAgICBib3JkZXItcmFkaXVzOiA3cHg7CiAgICAgICAgZm9udC1zaXplOiAxMnB4OwogICAgfQp9Cg==' | base64 -d >> public_html/css/autotag.css
-            printf '%s' 'LyogVklERU9TIE1PREVSTiBQTEFZIEJVVFRPTiAwLjE5LjAgKi8KLnZpZGVvcy1ibG9jay1saXN0IGE6bm90KC52aWRlb3MtYmxvY2stbm8taW1hZ2UpOjpiZWZvcmUgewogICAgdG9wOiBjYWxjKDUwJSAqIDkgLyAxNik7CiAgICBsZWZ0OiA1MCU7CiAgICB3aWR0aDogMzZweDsKICAgIGhlaWdodDogMjZweDsKICAgIGFzcGVjdC1yYXRpbzogYXV0bzsKICAgIGJvcmRlci1yYWRpdXM6IDdweDsKICAgIGJhY2tncm91bmQ6IHJnYmEoMjA0LCAwLCAwLCAuOTIpICFpbXBvcnRhbnQ7CiAgICBib3gtc2hhZG93OiAwIDJweCA1cHggcmdiYSgwLCAwLCAwLCAuMjIpOwogICAgZm9udC1zaXplOiAxMXB4OwogICAgdGV4dC1pbmRlbnQ6IDFweDsKICAgIHRleHQtc2hhZG93OiBub25lOwogICAgdHJhbnNmb3JtOiB0cmFuc2xhdGUoLTUwJSwgLTUwJSk7CiAgICB0cmFuc2l0aW9uOiB0cmFuc2Zvcm0gLjE2cyBlYXNlLCBiYWNrZ3JvdW5kLWNvbG9yIC4xNnMgZWFzZSwgYm94LXNoYWRvdyAuMTZzIGVhc2U7Cn0KLnZpZGVvcy1ibG9jay1saXN0IGE6bm90KC52aWRlb3MtYmxvY2stbm8taW1hZ2UpOmhvdmVyOjpiZWZvcmUsCi52aWRlb3MtYmxvY2stbGlzdCBhOm5vdCgudmlkZW9zLWJsb2NrLW5vLWltYWdlKTpmb2N1czo6YmVmb3JlIHsKICAgIGJhY2tncm91bmQ6ICNiODAwMDAgIWltcG9ydGFudDsKICAgIGJveC1zaGFkb3c6IDAgM3B4IDdweCByZ2JhKDAsIDAsIDAsIC4yNSk7CiAgICB0cmFuc2Zvcm06IHRyYW5zbGF0ZSgtNTAlLCAtNTAlKSBzY2FsZSgxLjA0KTsKfQo=' | base64 -d >> public_html/css/block.css
-          fi
-
-          if ! grep -Fq 'function plugin_getfeedcontent_videos' geeklog_integration.php; then
-            printf '%s' 'Ci8qKgogKiBFeHBvc2UgdGhlIHBlcnNpc3RlbnQgZWRpdG9yaWFsIFZpZGVvcyBjb3JwdXMgdG8gR2Vla2xvZyBDb250ZW50IFN5bmRpY2F0aW9uLgogKi8KZnVuY3Rpb24gcGx1Z2luX2dldGZlZWRjb250ZW50X3ZpZGVvcygkZmVlZCwgJiRsaW5rLCAmJHVwZGF0ZSwgJGZlZWRUeXBlID0gJ1JTUycsICRmZWVkVmVyc2lvbiA9ICcyLjAnKQp7CiAgICBnbG9iYWwgJF9DT05GLCAkX1RBQkxFUzsKCiAgICAkbGluayA9IHJ0cmltKCRfQ09ORlsnc2l0ZV91cmwnXSwgJy8nKSAuICcvdmlkZW9zL2luZGV4LnBocCc7CiAgICAkdXBkYXRlID0gJyc7CiAgICAkbGltaXQgPSAyMDsKICAgIGlmIChpc3NldCgkX1RBQkxFU1snc3luZGljYXRpb24nXSkpIHsKICAgICAgICAkc3RvcmVkTGltaXQgPSBEQl9nZXRJdGVtKAogICAgICAgICAgICAkX1RBQkxFU1snc3luZGljYXRpb24nXSwKICAgICAgICAgICAgJ2xpbWl0cycsCiAgICAgICAgICAgICJmaWQgPSAnIiAuIERCX2VzY2FwZVN0cmluZygkZmVlZCkgLiAiJyIKICAgICAgICApOwogICAgICAgIGlmIChpc19udW1lcmljKCRzdG9yZWRMaW1pdCkgJiYgKGludCkgJHN0b3JlZExpbWl0ID4gMCkgewogICAgICAgICAgICAkbGltaXQgPSBtaW4oMTAwLCAoaW50KSAkc3RvcmVkTGltaXQpOwogICAgICAgIH0KICAgIH0KCiAgICAkcmVjb3JkcyA9IHBsdWdpbl9nZXRpdGVtaW5mb192aWRlb3MoCiAgICAgICAgJyonLAogICAgICAgICcqJywKICAgICAgICAwLAogICAgICAgIGFycmF5KCdsaW1pdCcgPT4gJGxpbWl0LCAnb3JkZXInID0+ICdtb2RpZmllZC1kZXNjJykKICAgICk7CiAgICBpZiAoIWlzX2FycmF5KCRyZWNvcmRzKSkgewogICAgICAgIHJldHVybiBhcnJheSgpOwogICAgfQoKICAgICRjb250ZW50ID0gYXJyYXkoKTsKICAgIGZvcmVhY2ggKCRyZWNvcmRzIGFzICRyZWNvcmQpIHsKICAgICAgICBpZiAoIWlzX2FycmF5KCRyZWNvcmQpIHx8IGVtcHR5KCRyZWNvcmRbJ3VybCddKSB8fCBlbXB0eSgkcmVjb3JkWyd0aXRsZSddKSkgewogICAgICAgICAgICBjb250aW51ZTsKICAgICAgICB9CiAgICAgICAgJHRpbWVzdGFtcCA9ICFlbXB0eSgkcmVjb3JkWydkYXRlLW1vZGlmaWVkJ10pCiAgICAgICAgICAgID8gc3RydG90aW1lKCRyZWNvcmRbJ2RhdGUtbW9kaWZpZWQnXSkgOiAwOwogICAgICAgIGlmICghJHRpbWVzdGFtcCAmJiAhZW1wdHkoJHJlY29yZFsnZGF0ZS1jcmVhdGVkJ10pKSB7CiAgICAgICAgICAgICR0aW1lc3RhbXAgPSBzdHJ0b3RpbWUoJHJlY29yZFsnZGF0ZS1jcmVhdGVkJ10pOwogICAgICAgIH0KICAgICAgICBpZiAoISR0aW1lc3RhbXApIHsKICAgICAgICAgICAgJHRpbWVzdGFtcCA9IHRpbWUoKTsKICAgICAgICB9CiAgICAgICAgJGNvbnRlbnRbXSA9IGFycmF5KAogICAgICAgICAgICAndGl0bGUnID0+IChzdHJpbmcpICRyZWNvcmRbJ3RpdGxlJ10sCiAgICAgICAgICAgICdzdW1tYXJ5JyA9PiBpc3NldCgkcmVjb3JkWydkZXNjcmlwdGlvbiddKQogICAgICAgICAgICAgICAgPyAoc3RyaW5nKSAkcmVjb3JkWydkZXNjcmlwdGlvbiddIDogJycsCiAgICAgICAgICAgICdsaW5rJyA9PiAoc3RyaW5nKSAkcmVjb3JkWyd1cmwnXSwKICAgICAgICAgICAgJ3VpZCcgPT4gMCwKICAgICAgICAgICAgJ2F1dGhvcicgPT4gaXNzZXQoJHJlY29yZFsnYXV0aG9yJ10pID8gKHN0cmluZykgJHJlY29yZFsnYXV0aG9yJ10gOiAnJywKICAgICAgICAgICAgJ2RhdGUnID0+ICR0aW1lc3RhbXAsCiAgICAgICAgICAgICdmb3JtYXQnID0+ICdwbGFpbnRleHQnLAogICAgICAgICAgICAnZXh0ZW5zaW9ucycgPT4gYXJyYXkoKQogICAgICAgICk7CiAgICB9CgogICAgcmV0dXJuICRjb250ZW50Owp9Cg==' | base64 -d >> geeklog_integration.php
-          fi
-
-          php -l admin/index.php
-          php -l functions.inc
-          php -l geeklog_integration.php
-          grep -F 'VIDEOS ADMIN DASHBOARD 0.19.0' public_html/css/admin.css
-          grep -F 'VIDEOS MODERN PLAY BUTTON 0.19.0' public_html/css/videos.css
-          grep -F 'VIDEOS MODERN PLAY BUTTON 0.19.0' public_html/css/autotag.css
-          grep -F 'VIDEOS MODERN PLAY BUTTON 0.19.0' public_html/css/block.css
-          grep -F '$isVideosConfig' functions.inc
-          grep -F 'function plugin_getfeedcontent_videos' geeklog_integration.php
+          python3 tools/migrate-admin-language.py
+          grep -Fq 'function VIDEOS_adminText($key)' functions.inc
+          grep -Fq 'VIDEOS ADMIN LANGUAGE KEYS 0.19.0' language/english.php
+          grep -Fq 'VIDEOS ADMIN LANGUAGE KEYS 0.19.0' language/french_france.php
+          grep -Fq 'VIDEOS ADMIN UNIFIED UI 0.19.0' public_html/css/admin.css
 
       - name: Lint PHP sources
         shell: bash
@@ -67,6 +41,20 @@ jobs:
             php -l "$file" >/dev/null
           done < <(find . -type f \( -name '*.php' -o -name '*.inc' \) -not -path './.git/*' -not -path './dist/*' -print0)
 
+      - name: Validate admin localization
+        shell: bash
+        run: |
+          set -euo pipefail
+          for file in admin/index.php admin/actions.php admin/stats.php admin/moderation.php; do
+            if grep -nE "'(Vue générale|Repères|Ajouter une vidéo|Configuration|Voir le catalogue|Curation vidéo|Catalogue permanent|Maintenance|Contenu public et éditorial|Activité YouTube API|Intégration Geeklog|SEO vidéo|Modérer|Chaînes prioritaires)'" "$file"; then
+              echo "Hard-coded admin language remains in $file" >&2
+              exit 1
+            fi
+          done
+          grep -Fq 'VIDEOS_adminText(' admin/index.php
+          grep -Fq 'VIDEOS_adminText(' admin/actions.php
+          grep -Fq 'VIDEOS_adminText(' admin/stats.php
+
       - name: Build installable ZIP
         shell: bash
         run: |
@@ -75,17 +63,32 @@ jobs:
           rm -rf build
           mkdir -p build/videos dist
           rm -f dist/videos_*.zip
-          rsync -a ./ build/videos/ --exclude='.git/' --exclude='.github/' --exclude='.gitignore' --exclude='dist/' --exclude='build/' --exclude='tools/' --exclude='.agents/' --exclude='.codex/' --exclude='.idea/' --exclude='.vscode/' --exclude='.env' --exclude='.env.*' --exclude='*.log' --exclude='*.tmp' --exclude='*.cache' --exclude='videos_*.zip'
+          rsync -a ./ build/videos/ \
+            --exclude='.git/' \
+            --exclude='.github/' \
+            --exclude='.gitignore' \
+            --exclude='dist/' \
+            --exclude='build/' \
+            --exclude='tools/' \
+            --exclude='.agents/' \
+            --exclude='.codex/' \
+            --exclude='.idea/' \
+            --exclude='.vscode/' \
+            --exclude='.env' \
+            --exclude='.env.*' \
+            --exclude='*.log' \
+            --exclude='*.tmp' \
+            --exclude='*.cache' \
+            --exclude='videos_*.zip'
           cd build
           zip -q -r "../dist/${ARCHIVE}" videos
           cd ..
           unzip -t "dist/${ARCHIVE}"
-          unzip -p "dist/${ARCHIVE}" videos/public_html/css/admin.css | grep -Fq 'VIDEOS ADMIN DASHBOARD 0.19.0'
-          unzip -p "dist/${ARCHIVE}" videos/public_html/css/videos.css | grep -Fq 'VIDEOS MODERN PLAY BUTTON 0.19.0'
-          unzip -p "dist/${ARCHIVE}" videos/public_html/css/autotag.css | grep -Fq 'VIDEOS MODERN PLAY BUTTON 0.19.0'
-          unzip -p "dist/${ARCHIVE}" videos/public_html/css/block.css | grep -Fq 'VIDEOS MODERN PLAY BUTTON 0.19.0'
-          unzip -p "dist/${ARCHIVE}" videos/functions.inc | grep -Fq '$isVideosConfig'
-          unzip -p "dist/${ARCHIVE}" videos/geeklog_integration.php | grep -Fq 'function plugin_getfeedcontent_videos'
+          unzip -p "dist/${ARCHIVE}" videos/functions.inc | grep -Fq 'function VIDEOS_adminText'
+          unzip -p "dist/${ARCHIVE}" videos/language/english.php | grep -Fq 'VIDEOS ADMIN LANGUAGE KEYS 0.19.0'
+          unzip -p "dist/${ARCHIVE}" videos/language/french_france.php | grep -Fq 'VIDEOS ADMIN LANGUAGE KEYS 0.19.0'
+          unzip -p "dist/${ARCHIVE}" videos/public_html/css/admin.css | grep -Fq 'VIDEOS ADMIN UNIFIED UI 0.19.0'
+          unzip -p "dist/${ARCHIVE}" videos/public_html/css/block.css | grep -Fq 'VIDEOS BLOCK PLAY CENTER FIX 0.19.0'
 
       - name: Commit normalized sources and archive
         shell: bash
@@ -93,9 +96,15 @@ jobs:
           set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add admin/index.php functions.inc geeklog_integration.php public_html/css/videos.css public_html/css/autotag.css public_html/css/block.css public_html/css/admin.css dist
+          git add \
+            admin/index.php admin/actions.php admin/stats.php admin/moderation.php \
+            functions.inc \
+            language/english.php language/french_france.php \
+            public_html/css/admin.css \
+            tools/migrate-admin-language.py \
+            dist
           if git diff --cached --quiet; then
             exit 0
           fi
-          git commit -m "Modernize Videos play overlays"
+          git commit -m "Externalize and unify Videos admin interface"
           git push origin "HEAD:${GITHUB_REF_NAME}"
