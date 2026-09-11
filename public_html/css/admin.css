@@ -434,3 +434,98 @@ body .ui-tooltip-content{white-space:normal;overflow-wrap:anywhere;line-height:1
         margin-right: .75rem;
     }
 }
+
+/* VIDEOS ADMIN UNIFIED UI 0.19.0 */
+.videos-admin {
+    --videos-admin-gap: 1.25rem;
+}
+
+/* Overview uses Geeklog's block shell; keep its content away from the edges. */
+.videos-admin.block-center > .block-content {
+    padding: 0 var(--videos-admin-gap) var(--videos-admin-gap);
+    box-sizing: border-box;
+}
+
+/* Actions, Statistics and Moderation use the same visual shell. */
+.videos-admin:not(.block-center) {
+    overflow: hidden;
+    border: 1px solid rgba(127, 127, 127, .22);
+    border-radius: .7rem;
+    background: rgba(255, 255, 255, .78);
+    box-shadow: 0 8px 26px rgba(20, 30, 55, .06);
+}
+
+.videos-admin:not(.block-center) > h1 {
+    margin: 0;
+    padding: 1.15rem var(--videos-admin-gap);
+    border-bottom: 1px solid rgba(127, 127, 127, .18);
+    background: rgba(70, 95, 190, .065);
+    font-size: 1.45rem;
+    line-height: 1.25;
+}
+
+.videos-admin:not(.block-center) > .videos-navigation {
+    margin: 0 0 var(--videos-admin-gap);
+    padding: 0 var(--videos-admin-gap);
+}
+
+.videos-admin:not(.block-center) > .videos-admin-section,
+.videos-admin:not(.block-center) > .videos-stat-grid,
+.videos-admin:not(.block-center) > .videos-admin-help,
+.videos-admin:not(.block-center) > .videos-admin-results,
+.videos-admin:not(.block-center) > .videos-integration-grid,
+.videos-admin:not(.block-center) > details,
+.videos-admin:not(.block-center) > form,
+.videos-admin:not(.block-center) > p {
+    margin-left: var(--videos-admin-gap);
+    margin-right: var(--videos-admin-gap);
+}
+
+.videos-admin-section,
+.videos-admin-panel {
+    border-color: rgba(127, 127, 127, .18);
+    background: rgba(127, 127, 127, .025);
+    box-shadow: none;
+}
+
+.videos-admin-section > h2,
+.videos-admin-panel-heading h2 {
+    letter-spacing: -.01em;
+}
+
+.videos-admin-form + .videos-admin-form {
+    margin-top: .85rem;
+}
+
+.videos-admin-form input[type="text"],
+.videos-admin-form input[type="password"],
+.videos-admin-form select {
+    background: rgba(255, 255, 255, .82);
+}
+
+.videos-admin-form input:focus,
+.videos-admin-form select:focus,
+.videos-admin-form button:focus,
+.videos-admin a:focus {
+    outline: 2px solid rgba(54, 89, 210, .45);
+    outline-offset: 2px;
+}
+
+.videos-admin-table tbody tr:hover {
+    background: rgba(70, 95, 190, .045);
+}
+
+.videos-admin .videos-navigation {
+    box-sizing: border-box;
+}
+
+@media (max-width: 700px) {
+    .videos-admin {
+        --videos-admin-gap: .9rem;
+    }
+
+    .videos-admin:not(.block-center) > h1 {
+        font-size: 1.25rem;
+    }
+}
+

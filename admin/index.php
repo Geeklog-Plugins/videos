@@ -25,7 +25,7 @@ $html = '<section class="block-center videos-admin">'
 if (!$bootstrap->isReady()) {
     $html .= '<div class="videos-admin-notice videos-admin-notice-error">'
         . COM_showMessageText(
-            VIDEOS_localizeAdminText('Le stockage du plugin Videos est indisponible. Consultez les outils de réparation.'),
+            VIDEOS_localizeAdminText(VIDEOS_adminText('text_fce80ca1292f')),
             '',
             true
         )
@@ -86,18 +86,18 @@ $html .= '<section class="videos-admin-panel" aria-labelledby="videos-status-tit
     . '<div class="videos-admin-metrics">'
     . videos_admin_metric((int) $reservoirStatus['item_count'], 'Réservoir')
     . videos_admin_metric($videoRankingCount, 'Vidéos classées')
-    . videos_admin_metric($channelRankingCount, 'Chaînes classées')
-    . videos_admin_metric($priorityCount, 'Chaînes prioritaires')
-    . videos_admin_metric((int) $poolStatus['item_count'], 'Catalogue permanent')
-    . videos_admin_metric($pinnedCount, 'Vidéos épinglées')
+    . videos_admin_metric($channelRankingCount, VIDEOS_adminText('text_572e3a5c767b'))
+    . videos_admin_metric($priorityCount, VIDEOS_adminText('text_a9ddd7f81604'))
+    . videos_admin_metric((int) $poolStatus['item_count'], VIDEOS_adminText('text_51165f608ee6'))
+    . videos_admin_metric($pinnedCount, VIDEOS_adminText('text_5cb68c9efefa'))
     . '</div></section>';
 
 $html .= '<section class="videos-admin-panel videos-admin-integrations" aria-labelledby="videos-integrations-title">'
     . '<div class="videos-admin-panel-heading"><h2 id="videos-integrations-title">Intégrations</h2></div>'
     . '<div class="videos-admin-integration-grid">'
-    . videos_admin_integration('Recherche Geeklog', 'Active', 'Le corpus vidéo local est disponible dans la recherche native.')
+    . videos_admin_integration(VIDEOS_adminText('text_9274c76f0086'), VIDEOS_adminText('text_a733b809d2f1'), 'Le corpus vidéo local est disponible dans la recherche native.')
     . videos_admin_integration('XML Sitemap', 'Compatible', 'Les contenus publics persistants sont exposés via l’API ItemInfo de Geeklog.')
-    . videos_admin_integration('Syndication', function_exists('plugin_getfeedcontent_videos') ? 'Active' : 'À compléter', 'Flux RSS/Atom via le moteur de syndication natif de Geeklog.')
+    . videos_admin_integration('Syndication', function_exists('plugin_getfeedcontent_videos') ? VIDEOS_adminText('text_a733b809d2f1') : 'À compléter', 'Flux RSS/Atom via le moteur de syndication natif de Geeklog.')
     . '</div></section>';
 
 $html .= '<footer class="videos-admin-public-links" aria-label="Pages publiques Videos">'
@@ -107,7 +107,7 @@ $html .= '<footer class="videos-admin-public-links" aria-label="Pages publiques 
     . '<a href="' . htmlspecialchars(plugin_idtourl_videos('', 'rankings:channels'), ENT_QUOTES, 'UTF-8') . '">Classement chaînes</a>'
     . '</footer></div></div></section>';
 
-$html = VIDEOS_localizeAdminText($html);
+
 
 echo COM_createHTMLDocument(
     $html,

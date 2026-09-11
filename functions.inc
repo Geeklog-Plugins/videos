@@ -601,6 +601,19 @@ function VIDEOS_renderNavigation($active)
     return $html . '</ul></nav>';
 }
 
+function VIDEOS_adminText($key)
+{
+    global $LANG_VIDEOS_ADMIN;
+
+    if (isset($LANG_VIDEOS_ADMIN) &&
+        is_array($LANG_VIDEOS_ADMIN) &&
+        isset($LANG_VIDEOS_ADMIN[$key])) {
+        return $LANG_VIDEOS_ADMIN[$key];
+    }
+
+    return (string) $key;
+}
+
 function VIDEOS_localizeAdminText($text)
 {
     global $LANG_VIDEOS_ADMIN_TEXT;

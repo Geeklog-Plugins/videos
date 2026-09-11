@@ -14,7 +14,7 @@ $bootstrap = new Videos_Bootstrap($_CONF);
 $message = '';
 $searchResults = array();
 if (!$bootstrap->isReady()) {
-    $message = 'Le stockage du plugin Videos est indisponible.';
+    $message = VIDEOS_adminText('text_f926975ff5ae');
 }
 $store = $bootstrap->isReady() ? $bootstrap->getStore() : null;
 $cache = $store ? new Videos_Cache($store) : null;
@@ -29,72 +29,72 @@ $ranking = $store ? new Videos_Ranking(
 
 if ($store && $_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!SEC_checkToken()) {
-        $message = 'Le jeton de sécurité a expiré. Veuillez recommencer.';
+        $message = VIDEOS_adminText('text_0ecfd915585b');
     } else {
         $action = isset($_POST['videos_action']) ? COM_applyFilter($_POST['videos_action']) : '';
         if ($action === 'save_key') {
             $key = isset($_POST['youtube_api_key']) ? trim((string) $_POST['youtube_api_key']) : '';
             $message = $bootstrap->setYouTubeApiKey($key)
-                ? 'La clé YouTube Data API a été enregistrée.'
-                : 'La clé API est invalide.';
+                ? VIDEOS_adminText('text_b4e2eefbbdc4')
+                : VIDEOS_adminText('text_22f8934886c0');
         } elseif ($action === 'test_search') {
             $query = isset($_POST['test_query']) ? trim(strip_tags((string) $_POST['test_query'])) : '';
             if ($query === '' || strlen($query) > 250) {
-                $message = 'La requête de test est invalide.';
+                $message = VIDEOS_adminText('text_b9c2637a93a2');
             } else {
                 $searchResults = videos_actions_test_search($bootstrap, $query, $_VIDEOS_CONF);
                 $message = $searchResults === false
-                    ? videos_actions_failure_message($store, $_VIDEOS_CONF, 'La recherche de test a échoué.')
-                    : count($searchResults['video_ids']) . ' vidéo(s) valide(s) trouvée(s).';
+                    ? videos_actions_failure_message($store, $_VIDEOS_CONF, VIDEOS_adminText('text_fb7daf8e62a9'))
+                    : count($searchResults['video_ids']) . VIDEOS_adminText('text_084fc2d48df7');
             }
         } elseif ($action === 'seed_discovery' && SEC_hasRights('videos.maintenance')) {
             $query = isset($_POST['seed_query']) ? trim(strip_tags((string) $_POST['seed_query'])) : '';
             if ($query === '' || strlen($query) > 250) {
-                $message = 'La requête d’amorçage est invalide.';
+                $message = VIDEOS_adminText('text_71b79fe34391');
             } else {
                 $result = videos_actions_seed_discovery($bootstrap, $query, $_VIDEOS_CONF);
                 $message = is_array($result) && !empty($result['success'])
-                    ? (int) $result['added'] . ' vidéo(s) ajoutée(s) au réservoir.'
-                    : videos_actions_failure_message($store, $_VIDEOS_CONF, 'L’amorçage du réservoir a échoué.');
+                    ? (int) $result['added'] . VIDEOS_adminText('text_ad47e6dc8ae5')
+                    : videos_actions_failure_message($store, $_VIDEOS_CONF, VIDEOS_adminText('text_c2b9f6b8792e'));
             }
         } elseif ($action === 'clear_cache' && SEC_hasRights('videos.maintenance')) {
             $scope = isset($_POST['cache_scope']) ? COM_applyFilter($_POST['cache_scope']) : '';
             $result = (new Videos_CacheMaintenance($store))->clear($scope);
             $message = !empty($result['success'])
-                ? (int) $result['deleted'] . ' entrée(s) de cache supprimée(s).'
-                : 'Nettoyage partiel : ' . (int) $result['deleted'] . ' supprimée(s), '
-                    . (int) $result['failed'] . ' échec(s).';
+                ? (int) $result['deleted'] . VIDEOS_adminText('text_ee4d17dbc88e')
+                : VIDEOS_adminText('text_31d5d0551559') . (int) $result['deleted'] . VIDEOS_adminText('text_20919bd77772')
+                    . (int) $result['failed'] . VIDEOS_adminText('text_7a20df261c8c');
         } elseif ($action === 'rebuild_ranking' && SEC_hasRights('videos.maintenance')) {
             $count = $ranking->rebuild();
             $message = $count === false
-                ? 'La reconstruction des classements a échoué.'
-                : 'Classements reconstruits : ' . (int) $count . ' vidéo(s) classée(s).';
+                ? VIDEOS_adminText('text_876334806dd2')
+                : VIDEOS_adminText('text_bfde1a65fbe3') . (int) $count . VIDEOS_adminText('text_020cadee742e');
         } elseif ($action === 'pool_rebuild' && SEC_hasRights('videos.maintenance')) {
             $result = $pool->synchronize($ranking->getGlobal(500), $_VIDEOS_CONF, true);
             $message = $result === false
-                ? 'La reconstruction du catalogue permanent a échoué.'
-                : 'Le catalogue permanent a été reconstruit.';
+                ? VIDEOS_adminText('text_9d9f55bd54a0')
+                : VIDEOS_adminText('text_f67763ff79a5');
         } elseif ($action === 'add_video') {
             $input = isset($_POST['video_input']) ? trim((string) $_POST['video_input']) : '';
             $videoId = videos_admin_extract_video_id($input);
             if ($videoId === '') {
-                $message = 'ID ou URL YouTube invalide.';
+                $message = VIDEOS_adminText('text_ae022b030db2');
             } else {
                 $video = $cache->getVideo($videoId, true);
                 if (!is_array($video)) {
                     $video = videos_admin_fetch_single_video($bootstrap, $cache, $videoId, $_VIDEOS_CONF);
                 }
                 if (!is_array($video)) {
-                    $message = 'La vidéo est introuvable, privée, non intégrable ou refusée par la politique du plugin.';
+                    $message = VIDEOS_adminText('text_17f397876177');
                 } elseif ($moderation->isVideoBlocked($videoId)) {
-                    $message = 'Cette vidéo est actuellement bloquée par la modération.';
+                    $message = VIDEOS_adminText('text_0cfe6726f92e');
                 } else {
                     $global = $ranking->getGlobal(500);
                     $rankingItem = isset($global[$videoId]) ? $global[$videoId] : array();
                     $saved = $pool->setManualState($videoId, 'added', $rankingItem);
                     $message = $saved
-                        ? 'Vidéo ajoutée au catalogue permanent.'
-                        : 'Impossible d’ajouter la vidéo au catalogue permanent.';
+                        ? VIDEOS_adminText('text_932494fc57f2')
+                        : VIDEOS_adminText('text_4c054f116ec1');
                 }
             }
         } elseif (in_array(
@@ -114,8 +114,8 @@ if ($store && $_SERVER['REQUEST_METHOD'] === 'POST') {
             $global = $ranking->getGlobal(500);
             $rankingItem = isset($global[$videoId]) ? $global[$videoId] : array();
             $message = $pool->setManualState($videoId, $stateMap[$action], $rankingItem)
-                ? 'Décision éditoriale enregistrée.'
-                : 'Impossible d’enregistrer cette décision.';
+                ? VIDEOS_adminText('text_de5d5cfd3ce1')
+                : VIDEOS_adminText('text_7e712361ea05');
         } elseif ($action === 'signal_public_pages') {
             $urls = videos_admin_public_urls(
                 $store,
@@ -126,17 +126,17 @@ if ($store && $_SERVER['REQUEST_METHOD'] === 'POST') {
                 $_VIDEOS_CONF
             );
             if (count($urls) === 0) {
-                $message = 'Aucune URL publique Videos à signaler.';
+                $message = VIDEOS_adminText('text_ac3df2f3fa54');
             } elseif (function_exists('send_to_indexnow')) {
                 $result = send_to_indexnow(
                     $urls,
                     array('item_type' => 'videos', 'event' => 'manual-sync')
                 );
                 $message = $result === false
-                    ? 'Le batch IndexNow n’a pas pu être envoyé.'
-                    : count($urls) . ' URL(s) Videos envoyée(s) à IndexNow en un seul batch.';
+                    ? VIDEOS_adminText('text_71846fe03008')
+                    : count($urls) . VIDEOS_adminText('text_1917e5a15914');
             } else {
-                $message = 'Le plugin IndexNow n’est pas disponible. Aucune fausse création de contenu n’a été émise.';
+                $message = VIDEOS_adminText('text_506e5b71fa6a');
             }
         }
     }
@@ -149,7 +149,7 @@ $html = '<div class="videos-admin"><h1>Videos — Actions</h1>'
     . videos_admin_section_nav($_CONF, 'actions');
 if ($message !== '') {
     $message = VIDEOS_localizeAdminText($message);
-    if ($message === VIDEOS_localizeAdminText('Vidéo ajoutée au catalogue permanent.')) {
+    if ($message === VIDEOS_localizeAdminText(VIDEOS_adminText('text_932494fc57f2'))) {
         $html .= '<p class="videos-admin-help"><strong>'
             . htmlspecialchars($message, ENT_QUOTES, 'UTF-8') . '</strong></p>';
     } else {
@@ -177,12 +177,12 @@ if (empty($records['items'])) {
         $html .= '<tr><td><a href="' . htmlspecialchars(plugin_idtourl_videos('', $videoId), ENT_QUOTES, 'UTF-8') . '">'
             . htmlspecialchars($title, ENT_QUOTES, 'UTF-8') . '</a><br><code>'
             . htmlspecialchars($videoId, ENT_QUOTES, 'UTF-8') . '</code></td><td>'
-            . ($isPinned ? 'Épinglée' : 'Permanente') . '</td><td>';
+            . ($isPinned ? VIDEOS_adminText('text_a19363131274') : VIDEOS_adminText('text_f6e42f89e024')) . '</td><td>';
         $html .= $isPinned
-            ? videos_admin_action_form('pool_unpin', $videoId, 'Désépingler', $token)
-            : videos_admin_action_form('pool_pin', $videoId, 'Épingler', $token);
-        $html .= videos_admin_action_form('pool_remove', $videoId, 'Retirer de la sélection', $token)
-            . videos_admin_action_form('pool_exclude', $videoId, 'Exclure des sélections futures', $token)
+            ? videos_admin_action_form('pool_unpin', $videoId, VIDEOS_adminText('text_2000d8f061a5'), $token)
+            : videos_admin_action_form('pool_pin', $videoId, VIDEOS_adminText('text_8e0c2199da00'), $token);
+        $html .= videos_admin_action_form('pool_remove', $videoId, VIDEOS_adminText('text_700071f4653e'), $token)
+            . videos_admin_action_form('pool_exclude', $videoId, VIDEOS_adminText('text_8191e677bdb0'), $token)
             . '</td></tr>';
     }
     $html .= '</tbody></table></div>'
@@ -194,7 +194,7 @@ if (!empty($records['excluded'])) {
         . count($records['excluded']) . ')</summary><ul>';
     foreach ($records['excluded'] as $videoId => $excludedAt) {
         $html .= '<li><code>' . htmlspecialchars($videoId, ENT_QUOTES, 'UTF-8') . '</code> '
-            . videos_admin_action_form('pool_allow', $videoId, 'Réautoriser', $token) . '</li>';
+            . videos_admin_action_form('pool_allow', $videoId, VIDEOS_adminText('text_b0e6d1f41864'), $token) . '</li>';
     }
     $html .= '</ul></details>';
 }
@@ -207,14 +207,14 @@ $html .= '</section>';
 
 $youtubeApiKeyConfigured = $bootstrap->getYouTubeApiKey() !== '';
 $html .= '<section class="videos-admin-section"><h2>YouTube Data API</h2>'
-    . '<p><strong>État :</strong> ' . ($youtubeApiKeyConfigured ? 'Clé API configurée.' : 'Clé API absente.') . '</p>';
+    . '<p><strong>État :</strong> ' . ($youtubeApiKeyConfigured ? VIDEOS_adminText('text_56ed19d372c3') : VIDEOS_adminText('text_f35fbe56e631')) . '</p>';
 if (!$youtubeApiKeyConfigured) {
     $html .= '<p>Une clé YouTube Data API est nécessaire pour rechercher de nouvelles vidéos et récupérer les données d’une vidéo qui n’est pas encore en cache. Les vidéos déjà mises en cache restent consultables sans nouvel appel API.</p>';
 }
 $html .= '<form class="videos-admin-form" method="post"><input type="hidden" name="videos_action" value="save_key">'
     . '<input type="hidden" name="' . CSRF_TOKEN . '" value="' . htmlspecialchars($token, ENT_QUOTES, 'UTF-8') . '">'
-    . '<label>' . ($youtubeApiKeyConfigured ? 'Remplacer la clé API' : 'Ajouter une clé API') . ' <input type="password" name="youtube_api_key" maxlength="200" autocomplete="new-password"></label> '
-    . '<button type="submit">' . ($youtubeApiKeyConfigured ? 'Remplacer la clé' : 'Enregistrer la clé') . '</button></form>'
+    . '<label>' . ($youtubeApiKeyConfigured ? VIDEOS_adminText('text_9297120a2501') : VIDEOS_adminText('text_c0c24054f6d3')) . ' <input type="password" name="youtube_api_key" maxlength="200" autocomplete="new-password"></label> '
+    . '<button type="submit">' . ($youtubeApiKeyConfigured ? VIDEOS_adminText('text_339a9fda1c7b') : VIDEOS_adminText('text_59ecc827b4fe')) . '</button></form>'
     . '<form class="videos-admin-form" method="post"><input type="hidden" name="videos_action" value="test_search">'
     . '<input type="hidden" name="' . CSRF_TOKEN . '" value="' . htmlspecialchars($token, ENT_QUOTES, 'UTF-8') . '">'
     . '<label>Recherche de test <input type="text" name="test_query" maxlength="250" size="50" required></label> '
@@ -259,8 +259,8 @@ if (function_exists('send_to_indexnow')) {
 }
 $html .= '</div>';
 
-$html = VIDEOS_localizeAdminText($html);
-echo COM_createHTMLDocument($html, array('pagetitle' => VIDEOS_localizeAdminText('Videos — Actions'), 'headercode' => VIDEOS_adminHeaderCode()));
+
+echo COM_createHTMLDocument($html, array('pagetitle' => VIDEOS_localizeAdminText(VIDEOS_adminText('text_dc284295eaa4')), 'headercode' => VIDEOS_adminHeaderCode()));
 
 function videos_actions_failure_message($store, $configuration, $prefix)
 {
@@ -276,7 +276,7 @@ function videos_actions_failure_message($store, $configuration, $prefix)
     }
     if ($limit > 0 && $count >= $limit) {
         return $prefix . ' La limite locale de recherches YouTube est atteinte ('
-            . $count . '/' . $limit . ' aujourd’hui).';
+            . $count . '/' . $limit . VIDEOS_adminText('text_5ca271aa51f8');
     }
     if (!empty($data['last_error']['code'])) {
         return $prefix . ' Dernière erreur YouTube : ' . (string) $data['last_error']['code']
