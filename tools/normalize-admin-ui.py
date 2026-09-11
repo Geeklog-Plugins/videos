@@ -6,6 +6,8 @@ ROOT = Path(__file__).resolve().parents[1]
 ADMIN = ROOT / 'admin'
 FUNCTIONS = ROOT / 'functions.inc'
 ADMIN_CSS = ROOT / 'public_html' / 'css' / 'admin.css'
+LANG_EN = ROOT / 'language' / 'english.php'
+LANG_FR = ROOT / 'language' / 'french_france.php'
 ADMIN_FILES = [
     ADMIN / 'index.php',
     ADMIN / 'actions.php',
@@ -15,6 +17,25 @@ ADMIN_FILES = [
 TOKEN_RE = re.compile(r'\{\{videos_admin_(text_[0-9a-f]{12})\}\}')
 STRING_RE = re.compile(r"'(?:\\.|[^'])*'")
 CSS_MARKER = '/* VIDEOS ADMIN UNIFIED UI 0.19.0 */'
+LANG_MARKER = '// 0.19.0 unified admin interface strings'
+
+LANG_KEYS = {
+    'admin_actions_column': ('Actions', 'Actions'),
+    'admin_cache_label': ('Cache', 'Cache'),
+    'admin_yes': ('Yes', 'Oui'),
+    'admin_no': ('No', 'Non'),
+    'admin_status_ok': ('OK', 'OK'),
+    'admin_remove_help': (
+        'removes the video from the permanent catalogue, but it may be selected again.',
+        'enlève la vidéo du catalogue permanent, mais elle pourra être sélectionnée de nouveau.'
+    ),
+    'admin_exclude_help': (
+        'prevents it from being added again until it is explicitly allowed.',
+        'l’empêche d’être réintégrée tant qu’elle n’est pas réautorisée.'
+    ),
+    'admin_consult': ('See', 'Consultez'),
+    'admin_byte_unit': ('B', 'o'),
+}
 
 
 def tokenized_literal_to_expression(match):
@@ -65,64 +86,105 @@ def remove_function(text, name):
     raise RuntimeError('Unbalanced function: ' + name)
 
 
-def normalize_page(path):
+def ensure_language_keys(path, language_index):
     text = path.read_text(encoding='utf-8')
+    if LANG_MARKER in text:
+        start = text.index(LANG_MARKER)
+        end_marker = '// END 0.19.0 unified admin interface strings'
+        end = text.index(end_marker, start) + len(end_marker)
+        text = text[:start] + text[end:]
+
+    lines = [LANG_MARKER]
+    for key, values in LANG_KEYS.items():
+        value = values[language_index].replace('\\', '\\\\').replace("'", "\\'")
+        lines.append("$LANG_VIDEOS['%s'] = '%s';" % (key, value))
+    lines.append('// END 0.19.0 unified admin interface strings')
+    block = '\n'.join(lines) + '\n\n'
+
+    marker = '// 0.18.0 interface strings'
+    pos = text.find(marker)
+    if pos < 0:
+        text = text.rstrip() + '\n\n' + block
+    else:
+        text = text[:pos] + block + text[pos:]
+    path.write_text(text, encoding='utf-8')
+
+
+def normalize_common_text(text):
     text = expand_tokens(text)
     text = text.replace('VIDEOS_adminRender($html)', '$html')
+    text = re.sub(
+        r"VIDEOS_localizeAdminText\(VIDEOS_adminText\(('text_[0-9a-f]{12}')\)\)",
+        r'VIDEOS_adminText(\1)',
+        text,
+    )
+    return text
+
+
+def normalize_page(path):
+    text = normalize_common_text(path.read_text(encoding='utf-8'))
 
     if path.name == 'index.php':
-        old = "$html = '<section class=\"block-center videos-admin\">'\n    . '<div class=\"block-title\">' . $title . '</div>'\n    . '<div class=\"block-content\">'\n    . videos_overview_nav($_CONF, 'overview');"
-        text = text.replace(old, "$html = VIDEOS_adminPageOpen('overview', $LANG_VIDEOS['admin_nav_overview']);")
-        text = text.replace(". '</footer></div></div></section>';", ". '</footer></div>' . VIDEOS_adminPageClose();")
+        text = re.sub(r"\$title = htmlspecialchars\([^;]+;\n", '', text, count=1)
+        text = text.replace(
+            ". '<p>' . VIDEOS_adminText('text_3dfe53da413b') . '</p></div>'",
+            ". '<div><p>' . VIDEOS_adminText('text_3dfe53da413b') . '</p></div>'"
+        )
+        text = text.replace(
+            "$html .= '<header class=\"videos-admin-intro\">'\n    . '<div><h2>' . VIDEOS_adminText('text_1006cb34bf19') . '</h2>'\n    . '<div><p>'",
+            "$html .= '<header class=\"videos-admin-intro\">'\n    . '<div><p>'"
+        )
+        text = text.replace(
+            ". '<p><a class=\"videos-admin-button\" href=\"'",
+            ". '<p><a class=\"videos-admin-button\" href=\"'"
+        )
+        text = text.replace(
+            ") . '\">' . VIDEOS_adminText('text_3b26dc5fb51b') . '</a></p></div></div></section>';",
+            ") . '\">' . VIDEOS_adminText('text_3b26dc5fb51b') . '</a></p></div>' . VIDEOS_adminPageClose();"
+        )
         text = remove_function(text, 'videos_overview_nav')
 
     elif path.name == 'actions.php':
-        text = re.sub(
-            r"\$html\s*=\s*'<div class=\"videos-admin\"><h1>'.*?videos_admin_section_nav\(\$_CONF, 'actions'\);",
-            "$html = VIDEOS_adminPageOpen('actions', $LANG_VIDEOS['admin_nav_actions']);",
-            text,
-            count=1,
-            flags=re.S,
+        text = text.replace('<th>Actions</th>', "<th>' . $LANG_VIDEOS['admin_actions_column'] . '</th>")
+        text = text.replace(
+            "</strong> enlève la vidéo du catalogue permanent, mais elle pourra être sélectionnée de nouveau. '",
+            "</strong> ' . $LANG_VIDEOS['admin_remove_help'] . ' '"
         )
-        text = re.sub(
-            r"\$html \+= '</div>';\s*\n\s*\n*echo COM_createHTMLDocument\(\$html,",
-            "$html .= VIDEOS_adminPageClose();\n\necho COM_createHTMLDocument($html,",
-            text,
-            count=1,
+        text = text.replace(
+            "</strong> l’empêche d’être réintégrée tant qu’elle n’est pas réautorisée.</p>';",
+            "</strong> ' . $LANG_VIDEOS['admin_exclude_help'] . '</p>';"
+        )
+        text = text.replace("<label>Cache <select", "<label>' . $LANG_VIDEOS['admin_cache_label'] . ' <select")
+        text = text.replace("'. Consultez ' .", "'. ' . $LANG_VIDEOS['admin_consult'] . ' ' .")
+        text = text.replace(
+            "$html .= '</div>';\n\n\necho COM_createHTMLDocument",
+            "$html .= VIDEOS_adminPageClose();\n\n\necho COM_createHTMLDocument"
+        )
+        text = text.replace(
+            "array('pagetitle' => VIDEOS_adminText('text_372047eedaf8'), 'headercode' => VIDEOS_adminHeaderCode())",
+            "array('pagetitle' => $LANG_VIDEOS['admin_title'], 'headercode' => VIDEOS_adminHeaderCode())"
         )
         text = remove_function(text, 'videos_admin_section_nav')
 
     elif path.name == 'stats.php':
-        text = re.sub(
-            r"\$html\s*=\s*'<div class=\"videos-admin\"><h1>'.*?videos_stats_nav\(\$_CONF, 'stats'\)",
-            "$html = VIDEOS_adminPageOpen('stats', $LANG_VIDEOS['admin_nav_stats'])",
-            text,
-            count=1,
-            flags=re.S,
+        text = text.replace("!empty($quotaData['suspended']) ? 'Oui' : 'Non'", "!empty($quotaData['suspended']) ? $LANG_VIDEOS['admin_yes'] : $LANG_VIDEOS['admin_no']")
+        text = text.replace("<h2>Cache</h2>", "<h2>' . $LANG_VIDEOS['admin_cache_label'] . '</h2>")
+        text = text.replace("<th>Cache</th>", "<th>' . $LANG_VIDEOS['admin_cache_label'] . '</th>")
+        text = text.replace("($allOk ? 'OK' :", "($allOk ? $LANG_VIDEOS['admin_status_ok'] :")
+        text = text.replace("($ok ? 'OK' :", "($ok ? $LANG_VIDEOS['admin_status_ok'] :")
+        text = text.replace("return $bytes . ' o';", "return $bytes . ' ' . $GLOBALS['LANG_VIDEOS']['admin_byte_unit'];")
+        text = text.replace(
+            "$html .= '</div>';\n\n\necho COM_createHTMLDocument(",
+            "$html .= VIDEOS_adminPageClose();\n\n\necho COM_createHTMLDocument("
         )
-        text = re.sub(
-            r"\$html \+= '</div>';\s*\n\s*\n*echo COM_createHTMLDocument\(",
-            "$html .= VIDEOS_adminPageClose();\n\necho COM_createHTMLDocument(",
-            text,
-            count=1,
-        )
-        text = text.replace("'headercode' => videos_stats_header_code()", "'headercode' => VIDEOS_adminHeaderCode()")
+        text = text.replace("'pagetitle' => VIDEOS_adminText('text_695c8c330b8f')", "'pagetitle' => $LANG_VIDEOS['admin_title']")
         text = remove_function(text, 'videos_stats_nav')
         text = remove_function(text, 'videos_stats_header_code')
 
     elif path.name == 'moderation.php':
-        text = re.sub(
-            r"\$html\s*=\s*'<div class=\"videos-admin\"><h1>'.*?videos_moderation_nav\(\$_CONF, 'moderation'\);",
-            "$html = VIDEOS_adminPageOpen('moderation', $LANG_VIDEOS['admin_nav_moderation']);",
-            text,
-            count=1,
-            flags=re.S,
-        )
-        text = re.sub(
-            r"\$html \+= '</div>';\s*\n\s*echo COM_createHTMLDocument\(",
-            "$html .= VIDEOS_adminPageClose();\n\necho COM_createHTMLDocument(",
-            text,
-            count=1,
+        text = text.replace(
+            "$html .= '</div>';\n\necho COM_createHTMLDocument(",
+            "$html .= VIDEOS_adminPageClose();\n\necho COM_createHTMLDocument("
         )
         text = remove_function(text, 'videos_moderation_nav')
 
@@ -131,7 +193,7 @@ def normalize_page(path):
 
 def ensure_shared_helpers():
     text = FUNCTIONS.read_text(encoding='utf-8')
-    for name in ('VIDEOS_adminNavigation', 'VIDEOS_adminPageOpen', 'VIDEOS_adminPageClose'):
+    for name in ('VIDEOS_adminNavigation', 'VIDEOS_adminPageOpen', 'VIDEOS_adminPageClose', 'VIDEOS_adminRender'):
         text = remove_function(text, name)
 
     marker = 'function VIDEOS_adminText($key)\n{'
@@ -373,13 +435,22 @@ def validate():
             raise RuntimeError('Unresolved admin token in ' + str(path))
         if 'videos_overview_nav(' in text or 'videos_admin_section_nav(' in text or 'videos_stats_nav(' in text or 'videos_moderation_nav(' in text:
             raise RuntimeError('Legacy admin navigation remains in ' + str(path))
-        if 'VIDEOS_adminRender($html)' in text:
+        if 'VIDEOS_adminRender(' in text:
             raise RuntimeError('Legacy admin token renderer remains in ' + str(path))
-        if "VIDEOS_adminPageOpen(" not in text:
-            raise RuntimeError('Shared admin shell missing in ' + str(path))
+        if "VIDEOS_adminPageOpen(" not in text or 'VIDEOS_adminPageClose()' not in text:
+            raise RuntimeError('Shared admin shell incomplete in ' + str(path))
+
+    actions = (ADMIN / 'actions.php').read_text(encoding='utf-8')
+    stats = (ADMIN / 'stats.php').read_text(encoding='utf-8')
+    forbidden = (' enlève la vidéo', ' l’empêche d’être', 'Consultez ', "'Oui'", "'Non'", '<h2>Cache</h2>')
+    for value in forbidden:
+        if value in actions or value in stats:
+            raise RuntimeError('Hard-coded admin UI text remains: ' + value)
 
 
 def main():
+    ensure_language_keys(LANG_EN, 0)
+    ensure_language_keys(LANG_FR, 1)
     ensure_shared_helpers()
     for path in ADMIN_FILES:
         normalize_page(path)
