@@ -249,3 +249,63 @@ function VIDEOS_channelPageEligible($channelId, $bootstrap = null)
     return isset($channels[$channelId]['video_count']) &&
         (int) $channels[$channelId]['video_count'] >= 2;
 }
+
+/**
+ * Expose the persistent editorial Videos corpus to Geeklog Content Syndication.
+ */
+function plugin_getfeedcontent_videos($feed, &$link, &$update, $feedType = 'RSS', $feedVersion = '2.0')
+{
+    global $_CONF, $_TABLES;
+
+    $link = rtrim($_CONF['site_url'], '/') . '/videos/index.php';
+    $update = '';
+    $limit = 20;
+    if (isset($_TABLES['syndication'])) {
+        $storedLimit = DB_getItem(
+            $_TABLES['syndication'],
+            'limits',
+            "fid = '" . DB_escapeString($feed) . "'"
+        );
+        if (is_numeric($storedLimit) && (int) $storedLimit > 0) {
+            $limit = min(100, (int) $storedLimit);
+        }
+    }
+
+    $records = plugin_getiteminfo_videos(
+        '*',
+        '*',
+        0,
+        array('limit' => $limit, 'order' => 'modified-desc')
+    );
+    if (!is_array($records)) {
+        return array();
+    }
+
+    $content = array();
+    foreach ($records as $record) {
+        if (!is_array($record) || empty($record['url']) || empty($record['title'])) {
+            continue;
+        }
+        $timestamp = !empty($record['date-modified'])
+            ? strtotime($record['date-modified']) : 0;
+        if (!$timestamp && !empty($record['date-created'])) {
+            $timestamp = strtotime($record['date-created']);
+        }
+        if (!$timestamp) {
+            $timestamp = time();
+        }
+        $content[] = array(
+            'title' => (string) $record['title'],
+            'summary' => isset($record['description'])
+                ? (string) $record['description'] : '',
+            'link' => (string) $record['url'],
+            'uid' => 0,
+            'author' => isset($record['author']) ? (string) $record['author'] : '',
+            'date' => $timestamp,
+            'format' => 'plaintext',
+            'extensions' => array()
+        );
+    }
+
+    return $content;
+}

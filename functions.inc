@@ -664,12 +664,16 @@ function plugin_getheadercode_videos()
 
     $header = '';
     $isAdmin = strpos($path, '/admin/plugins/videos/') !== false;
-    $isPublicVideos = !$isAdmin && strpos($path, '/videos/') !== false;
+    $isVideosConfig = strpos($path, '/admin/configuration.php') !== false
+        && isset($_GET['conf_group'])
+        && (string) $_GET['conf_group'] === 'videos';
+    $isPublicVideos = !$isAdmin && !$isVideosConfig
+        && strpos($path, '/videos/') !== false;
 
     if ($isPublicVideos) {
         $header .= VIDEOS_stylesheetLink('videos.css');
     }
-    if ($isAdmin) {
+    if ($isAdmin || $isVideosConfig) {
         $header .= VIDEOS_stylesheetLink('admin.css');
     }
     if (!empty($GLOBALS['_VIDEOS_NEEDS_AUTOTAG_CSS'])) {
