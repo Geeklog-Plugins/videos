@@ -220,6 +220,8 @@ function plugin_getBlocks_videos($side, $topic = '')
         return $blocks;
     }
 
+    $GLOBALS['_VIDEOS_NEEDS_BLOCK_CSS'] = true;
+
     $blocks[] = array(
         'name'           => 'videos_recommendations',
         'type'           => 'dynamic',
@@ -607,15 +609,56 @@ function VIDEOS_localizeAdminText($text)
     }
     return strtr((string) $text, $LANG_VIDEOS_ADMIN_TEXT);
 }
+
+function VIDEOS_stylesheetLink($file)
+{
+    global $_CONF;
+
+    return '<link rel="stylesheet" type="text/css" href="'
+        . htmlspecialchars(
+            rtrim($_CONF['site_url'], '/') . '/videos/css/' . $file,
+            ENT_QUOTES,
+            'UTF-8'
+        )
+        . '?v=' . rawurlencode(VIDEOS_PLUGIN_VERSION) . '">' . "\n";
+}
+
 function plugin_getheadercode_videos()
 {
-    global $_CONF, $_VIDEOS_CONF;
+    global $_VIDEOS_CONF;
+
     if (isset($_VIDEOS_CONF['enabled']) && !$_VIDEOS_CONF['enabled']) {
         return '';
     }
-    return '<link rel="stylesheet" type="text/css" href="'
-        . htmlspecialchars($_CONF['site_url'] . '/videos/css/videos.css', ENT_QUOTES, 'UTF-8')
-        . '?v=' . rawurlencode(VIDEOS_PLUGIN_VERSION) . '">' . "\n";
+
+    $path = '';
+    if (!empty($_SERVER['REQUEST_URI'])) {
+        $parsedPath = parse_url((string) $_SERVER['REQUEST_URI'], PHP_URL_PATH);
+        $path = is_string($parsedPath) ? $parsedPath : '';
+    }
+    if ($path === '' && !empty($_SERVER['SCRIPT_NAME'])) {
+        $path = (string) $_SERVER['SCRIPT_NAME'];
+    }
+    $path = str_replace('\\', '/', $path);
+
+    $header = '';
+    $isAdmin = strpos($path, '/admin/plugins/videos/') !== false;
+    $isPublicVideos = !$isAdmin && strpos($path, '/videos/') !== false;
+
+    if ($isPublicVideos) {
+        $header .= VIDEOS_stylesheetLink('videos.css');
+    }
+    if ($isAdmin) {
+        $header .= VIDEOS_stylesheetLink('admin.css');
+    }
+    if (!empty($GLOBALS['_VIDEOS_NEEDS_AUTOTAG_CSS'])) {
+        $header .= VIDEOS_stylesheetLink('autotag.css');
+    }
+    if (!empty($GLOBALS['_VIDEOS_NEEDS_BLOCK_CSS'])) {
+        $header .= VIDEOS_stylesheetLink('block.css');
+    }
+
+    return $header;
 }
 
 function VIDEOS_adminHeaderCode()
