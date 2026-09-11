@@ -148,7 +148,7 @@ $records = $pool ? $pool->records() : array('items' => array(), 'excluded' => ar
 $html = VIDEOS_adminPageOpen('actions', $LANG_VIDEOS['admin_nav_actions']);
 if ($message !== '') {
     $message = VIDEOS_localizeAdminText($message);
-    if ($message === VIDEOS_localizeAdminText(VIDEOS_adminText('text_1b98ef900ab7'))) {
+    if ($message === VIDEOS_adminText('text_1b98ef900ab7')) {
         $html .= '<p class="videos-admin-help"><strong>'
             . htmlspecialchars($message, ENT_QUOTES, 'UTF-8') . '</strong></p>';
     } else {
@@ -167,7 +167,7 @@ if (empty($records['items'])) {
     $html .= '<p>' . VIDEOS_adminText('text_d0d466d799cb') . '</p>';
 } else {
     $html .= '<div class="videos-admin-table-wrap"><table class="admin-list videos-admin-table"><thead><tr>'
-        . '<th>' . VIDEOS_adminText('text_304f6ca42f36') . '</th><th>' . VIDEOS_adminText('text_d3b28a2adb27') . '</th><th>Actions</th></tr></thead><tbody>';
+        . '<th>' . VIDEOS_adminText('text_304f6ca42f36') . '</th><th>' . VIDEOS_adminText('text_d3b28a2adb27') . '</th><th>' . $LANG_VIDEOS['admin_actions_column'] . '</th></tr></thead><tbody>';
     foreach ($records['items'] as $videoId => $item) {
         $video = $cache->getVideo($videoId, true);
         $title = is_array($video) && !empty($video['snippet']['title'])
@@ -185,8 +185,8 @@ if (empty($records['items'])) {
             . '</td></tr>';
     }
     $html .= '</tbody></table></div>'
-        . '<p class="videos-admin-help"><strong>' . VIDEOS_adminText('text_ddcf6449d058') . '</strong> enlève la vidéo du catalogue permanent, mais elle pourra être sélectionnée de nouveau. '
-        . '<strong>' . VIDEOS_adminText('text_6ce15f0ae2c2') . '</strong> l’empêche d’être réintégrée tant qu’elle n’est pas réautorisée.</p>';
+        . '<p class="videos-admin-help"><strong>' . VIDEOS_adminText('text_ddcf6449d058') . '</strong> ' . $LANG_VIDEOS['admin_remove_help'] . ' '
+        . '<strong>' . VIDEOS_adminText('text_6ce15f0ae2c2') . '</strong> ' . $LANG_VIDEOS['admin_exclude_help'] . '</p>';
 }
 if (!empty($records['excluded'])) {
     $html .= '<details class="videos-advanced-field"><summary>' . VIDEOS_adminText('text_5076293e41de') . ' ('
@@ -243,7 +243,7 @@ if (SEC_hasRights('videos.maintenance')) {
         . '<button type="submit">' . VIDEOS_adminText('text_50cc32da6a35') . '</button></form>'
         . '<form class="videos-admin-form" method="post"><input type="hidden" name="videos_action" value="clear_cache">'
         . '<input type="hidden" name="' . CSRF_TOKEN . '" value="' . htmlspecialchars($token, ENT_QUOTES, 'UTF-8') . '">'
-        . '<label>Cache <select name="cache_scope"><option value="search">' . VIDEOS_adminText('text_7e62fa37e865') . '</option><option value="videos">' . VIDEOS_adminText('text_ea129238fc57') . '</option>'
+        . '<label>' . $LANG_VIDEOS['admin_cache_label'] . ' <select name="cache_scope"><option value="search">' . VIDEOS_adminText('text_7e62fa37e865') . '</option><option value="videos">' . VIDEOS_adminText('text_ea129238fc57') . '</option>'
         . '<option value="channels">' . VIDEOS_adminText('text_88ef0e8638cb') . '</option><option value="availability">' . VIDEOS_adminText('text_0f06e60ae162') . '</option><option value="all">' . VIDEOS_adminText('text_b97ae3b4f909') . '</option></select></label> '
         . '<button type="submit">' . VIDEOS_adminText('text_daf08703c1e1') . '</button></form>'
         . '<p><a href="' . htmlspecialchars($_CONF['site_admin_url'] . '/plugins/videos/repair.php', ENT_QUOTES, 'UTF-8') . '">' . VIDEOS_adminText('text_c756339c6ce3') . '</a></p></section>';
@@ -256,10 +256,10 @@ if (function_exists('send_to_indexnow')) {
         . '<input type="hidden" name="' . CSRF_TOKEN . '" value="' . htmlspecialchars($token, ENT_QUOTES, 'UTF-8') . '">'
         . '<button type="submit">' . VIDEOS_adminText('text_1167f948e9e0') . '</button></form></section>';
 }
-$html .= '</div>';
+$html .= VIDEOS_adminPageClose();
 
 
-echo COM_createHTMLDocument($html, array('pagetitle' => VIDEOS_localizeAdminText(VIDEOS_adminText('text_372047eedaf8')), 'headercode' => VIDEOS_adminHeaderCode()));
+echo COM_createHTMLDocument($html, array('pagetitle' => $LANG_VIDEOS['admin_title'], 'headercode' => VIDEOS_adminHeaderCode()));
 
 function videos_actions_failure_message($store, $configuration, $prefix)
 {
@@ -279,7 +279,7 @@ function videos_actions_failure_message($store, $configuration, $prefix)
     }
     if (!empty($data['last_error']['code'])) {
         return $prefix . ' ' . VIDEOS_adminText('text_3d0c6584d55c') . (string) $data['last_error']['code']
-            . '. Consultez ' . VIDEOS_adminText('text_fdce305a50b3') . ' > ' . VIDEOS_adminText('text_65748d98f850') . '.';
+            . '. ' . $LANG_VIDEOS['admin_consult'] . ' ' . VIDEOS_adminText('text_fdce305a50b3') . ' > ' . VIDEOS_adminText('text_65748d98f850') . '.';
     }
     return $prefix . ' ' . VIDEOS_adminText('text_ed0d19fdd3ad');
 }

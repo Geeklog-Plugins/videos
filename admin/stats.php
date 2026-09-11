@@ -16,9 +16,9 @@ if (!SEC_hasRights('videos.admin')) {
 $bootstrap = new Videos_Bootstrap($_CONF);
 if (!$bootstrap->isReady()) {
     echo COM_createHTMLDocument(
-        COM_showMessageText(VIDEOS_localizeAdminText(VIDEOS_adminText('text_ad4bee7e9ff4')), '', true),
+        COM_showMessageText(VIDEOS_adminText('text_ad4bee7e9ff4'), '', true),
         array(
-            'pagetitle' => VIDEOS_localizeAdminText(VIDEOS_adminText('text_695c8c330b8f')),
+            'pagetitle' => $LANG_VIDEOS['admin_title'],
             'headercode' => VIDEOS_adminHeaderCode()
         )
     );
@@ -158,7 +158,7 @@ $html .= '<section class="videos-admin-section"><h2>' . VIDEOS_adminText('text_6
     )
     . videos_stat_card(
         VIDEOS_adminText('text_229f2b1943a8'),
-        !empty($quotaData['suspended']) ? 'Oui' : 'Non',
+        !empty($quotaData['suspended']) ? $LANG_VIDEOS['admin_yes'] : $LANG_VIDEOS['admin_no'],
         VIDEOS_adminText('text_a715911d13d4')
     )
     . videos_stat_card(
@@ -207,10 +207,10 @@ $cacheLabels = array(
     'channels' => VIDEOS_adminText('text_13849355df98'),
     'availability' => VIDEOS_adminText('text_412bbe5e0703')
 );
-$html .= '<section class="videos-admin-section"><h2>Cache</h2>'
+$html .= '<section class="videos-admin-section"><h2>' . $LANG_VIDEOS['admin_cache_label'] . '</h2>'
     . '<div class="videos-admin-table-wrap">'
     . '<table class="admin-list videos-admin-table"><thead><tr>'
-    . '<th>Cache</th><th>' . VIDEOS_adminText('text_f41ca442a8d6') . '</th><th>' . VIDEOS_adminText('text_3b18e8e33250') . '</th>'
+    . '<th>' . $LANG_VIDEOS['admin_cache_label'] . '</th><th>' . VIDEOS_adminText('text_f41ca442a8d6') . '</th><th>' . VIDEOS_adminText('text_3b18e8e33250') . '</th>'
     . '<th>' . VIDEOS_adminText('text_fcbf6472e074') . '</th></tr></thead><tbody>';
 foreach ($cacheLabels as $scope => $label) {
     $item = isset($cacheStatus[$scope]) ? $cacheStatus[$scope] : array();
@@ -252,11 +252,11 @@ if ($seoDiagnostic !== '') {
         'embedUrl' => strpos($seoDiagnostic, '"embedUrl"') !== false
     );
     $allOk = !in_array(false, $checks, true);
-    $html .= '<p><strong>' . VIDEOS_adminText('text_07b942be7aef') . ($allOk ? 'OK' : VIDEOS_adminText('text_994b6ba1c20e')) . '</strong></p>'
+    $html .= '<p><strong>' . VIDEOS_adminText('text_07b942be7aef') . ($allOk ? $LANG_VIDEOS['admin_status_ok'] : VIDEOS_adminText('text_994b6ba1c20e')) . '</strong></p>'
         . '<ul class="videos-admin-status">';
     foreach ($checks as $label => $ok) {
         $html .= '<li>' . htmlspecialchars($label, ENT_QUOTES, 'UTF-8') . ' : '
-            . ($ok ? 'OK' : VIDEOS_adminText('text_994b6ba1c20e')) . '</li>';
+            . ($ok ? $LANG_VIDEOS['admin_status_ok'] : VIDEOS_adminText('text_994b6ba1c20e')) . '</li>';
     }
     $html .= '</ul><details class="videos-advanced-field"><summary>' . VIDEOS_adminText('text_605c3eed118a') . '</summary>'
         . '<p>' . VIDEOS_adminText('text_a5d43ef5c22a') . ' : <code>'
@@ -269,13 +269,13 @@ if ($seoDiagnostic !== '') {
 }
 $html .= '</section>';
 
-$html .= '</div>';
+$html .= VIDEOS_adminPageClose();
 
 
 echo COM_createHTMLDocument(
     $html,
     array(
-        'pagetitle' => VIDEOS_localizeAdminText(VIDEOS_adminText('text_695c8c330b8f')),
+        'pagetitle' => $LANG_VIDEOS['admin_title'],
         'headercode' => VIDEOS_adminHeaderCode()
     )
 );
@@ -296,7 +296,7 @@ function videos_stat_card($label, $value, $detail, $smallValue = false)
 function videos_stats_date_text($value)
 {
     if (empty($value)) {
-        return VIDEOS_localizeAdminText(VIDEOS_adminText('text_55532ba13b84'));
+        return VIDEOS_adminText('text_55532ba13b84');
     }
     $timestamp = strtotime((string) $value);
     if ($timestamp !== false && function_exists('COM_getUserDateTimeFormat')) {
@@ -322,5 +322,5 @@ function videos_stats_bytes($bytes)
     if ($bytes >= 1024) {
         return number_format($bytes / 1024, 1, ',', ' ') . ' KiB';
     }
-    return $bytes . ' o';
+    return $bytes . ' ' . $GLOBALS['LANG_VIDEOS']['admin_byte_unit'];
 }

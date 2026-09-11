@@ -16,13 +16,12 @@ if (!SEC_hasRights('videos.admin')) {
 }
 
 $bootstrap = new Videos_Bootstrap($_CONF);
-$title = htmlspecialchars($LANG_VIDEOS['admin_title'], ENT_QUOTES, 'UTF-8');
 $html = VIDEOS_adminPageOpen('overview', $LANG_VIDEOS['admin_nav_overview']);
 
 if (!$bootstrap->isReady()) {
     $html .= '<div class="videos-admin-notice videos-admin-notice-error">'
         . COM_showMessageText(
-            VIDEOS_localizeAdminText(VIDEOS_adminText('text_563d8e12a137')),
+            VIDEOS_adminText('text_563d8e12a137'),
             '',
             true
         )
@@ -31,7 +30,7 @@ if (!$bootstrap->isReady()) {
             $_CONF['site_admin_url'] . '/plugins/videos/repair.php',
             ENT_QUOTES,
             'UTF-8'
-        ) . '">' . VIDEOS_adminText('text_3b26dc5fb51b') . '</a></p></div></div></section>';
+        ) . '">' . VIDEOS_adminText('text_3b26dc5fb51b') . '</a></p></div>' . VIDEOS_adminPageClose();
     echo COM_createHTMLDocument(
         $html,
         array(
@@ -60,8 +59,7 @@ $pinnedCount = isset($poolStatus['pinned_count']) ? (int) $poolStatus['pinned_co
 
 $html .= '<div class="videos-admin-dashboard">';
 $html .= '<header class="videos-admin-intro">'
-    . '<div><h2>' . VIDEOS_adminText('text_1006cb34bf19') . '</h2>'
-    . '<p>' . VIDEOS_adminText('text_3dfe53da413b') . '</p></div>'
+    . '<div><p>' . VIDEOS_adminText('text_3dfe53da413b') . '</p></div>'
     . '<div class="videos-admin-quick-links">'
     . '<a class="videos-admin-button videos-admin-button-primary" href="'
     . htmlspecialchars($_CONF['site_admin_url'] . '/plugins/videos/actions.php', ENT_QUOTES, 'UTF-8')

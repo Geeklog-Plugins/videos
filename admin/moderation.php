@@ -143,7 +143,7 @@ $html .= videos_moderation_table(
     $token,
     $LANG_VIDEOS
 );
-$html .= '</div>';
+$html .= VIDEOS_adminPageClose();
 
 echo COM_createHTMLDocument(
     $html,
