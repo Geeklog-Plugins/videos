@@ -2,21 +2,31 @@
 
 require_once '../../../lib-common.php';
 
+$adminHeaderCode = VIDEOS_adminHeaderCode()
+    . '<link rel="stylesheet" type="text/css" href="'
+    . htmlspecialchars(
+        $_CONF['site_url'] . '/videos/css/admin.css?v=' . VIDEOS_PLUGIN_VERSION,
+        ENT_QUOTES,
+        'UTF-8'
+    ) . '">' . "\n";
+
 if (!SEC_hasRights('videos.admin')) {
     echo COM_createHTMLDocument(
         COM_showMessageText($LANG_VIDEOS['access_denied'], '', true),
         array(
             'pagetitle' => $LANG_VIDEOS['admin_title'],
-            'headercode' => VIDEOS_adminHeaderCode()
+            'headercode' => $adminHeaderCode
         )
     );
     exit;
 }
 
 $bootstrap = new Videos_Bootstrap($_CONF);
-$html = '<div class="videos-admin"><h1>'
-    . htmlspecialchars($LANG_VIDEOS['admin_title'], ENT_QUOTES, 'UTF-8')
-    . '</h1>' . videos_overview_nav($_CONF, 'overview');
+$title = htmlspecialchars($LANG_VIDEOS['admin_title'], ENT_QUOTES, 'UTF-8');
+$html = '<section class="block-center videos-admin">'
+    . '<div class="block-title">' . $title . '</div>'
+    . '<div class="block-content">'
+    . videos_overview_nav($_CONF, 'overview');
 
 if (!$bootstrap->isReady()) {
     $html .= COM_showMessageText(
@@ -29,12 +39,12 @@ if (!$bootstrap->isReady()) {
             $_CONF['site_admin_url'] . '/plugins/videos/repair.php',
             ENT_QUOTES,
             'UTF-8'
-        ) . '">Ouvrir les outils de réparation</a></p></div>';
+        ) . '">Ouvrir les outils de réparation</a></p></div></section>';
     echo COM_createHTMLDocument(
         $html,
         array(
             'pagetitle' => $LANG_VIDEOS['admin_title'],
-            'headercode' => VIDEOS_adminHeaderCode()
+            'headercode' => $adminHeaderCode
         )
     );
     exit;
@@ -92,7 +102,7 @@ $html .= '<section class="videos-admin-section"><h2>Pages publiques</h2><ul>'
     . '<li><a href="' . htmlspecialchars(plugin_idtourl_videos('', 'catalogue'), ENT_QUOTES, 'UTF-8') . '">Catalogue vidéo</a></li>'
     . '<li><a href="' . htmlspecialchars(plugin_idtourl_videos('', 'rankings:videos'), ENT_QUOTES, 'UTF-8') . '">Classement global des vidéos</a></li>'
     . '<li><a href="' . htmlspecialchars(plugin_idtourl_videos('', 'rankings:channels'), ENT_QUOTES, 'UTF-8') . '">Classement des chaînes</a></li>'
-    . '</ul></section></div>';
+    . '</ul></section></div></section>';
 
 $html = VIDEOS_localizeAdminText($html);
 
@@ -100,7 +110,7 @@ echo COM_createHTMLDocument(
     $html,
     array(
         'pagetitle' => $LANG_VIDEOS['admin_title'],
-        'headercode' => VIDEOS_adminHeaderCode()
+        'headercode' => $adminHeaderCode
     )
 );
 
