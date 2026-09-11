@@ -28,11 +28,22 @@ jobs:
         run: |
           set -euo pipefail
           python3 tools/normalize-admin-ui.py
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path('admin/actions.php')
+          text = path.read_text(encoding='utf-8')
+          needle = "function videos_actions_failure_message($store, $configuration, $prefix)\n{\n"
+          replacement = needle + "    global $LANG_VIDEOS;\n\n"
+          if needle in text and replacement not in text:
+              text = text.replace(needle, replacement, 1)
+              path.write_text(text, encoding='utf-8')
+          PY
           grep -Fq 'function VIDEOS_adminNavigation($active)' functions.inc
           grep -Fq 'function VIDEOS_adminPageOpen($active, $pageTitle)' functions.inc
           grep -Fq 'VIDEOS ADMIN UNIFIED UI 0.19.0' public_html/css/admin.css
           grep -Fq "admin_remove_help" language/english.php
           grep -Fq "admin_remove_help" language/french_france.php
+          grep -Fq 'global $LANG_VIDEOS;' admin/actions.php
           if grep -R -nF '{{videos_admin_' admin; then
             echo 'Unresolved Videos admin language token found.' >&2
             exit 1
