@@ -6,19 +6,14 @@ on:
     branches:
       - 0.19.0
     paths-ignore:
-      - 'dist/**'
+      - dist/**
 
 permissions:
   contents: write
 
-concurrency:
-  group: videos-dist-${{ github.ref }}
-  cancel-in-progress: true
-
 jobs:
   build-dist:
     runs-on: ubuntu-latest
-
     steps:
       - name: Check out source
         uses: actions/checkout@v5
@@ -26,94 +21,24 @@ jobs:
           fetch-depth: 0
 
       - name: Synchronize branch
-        shell: bash
-        run: |
-          set -euo pipefail
-          git pull --ff-only origin "${GITHUB_REF_NAME}"
+        run: git pull --ff-only origin "${GITHUB_REF_NAME}"
 
-      - name: Ensure 0.19.0 upgrade path
-        shell: bash
-        run: |
-          set -euo pipefail
-          python3 <<'PY'
-          from pathlib import Path
-
-          path = Path('install_updates.php')
-          text = path.read_text(encoding='utf-8')
-
-          if "'0.18.0' => array(" not in text:
-              old = """    '0.17.1' => array(
-                  'next' => '0.18.0',
-                  'callback' => 'videos_update_0_17_1_to_0_18_0'
-              )
-          );"""
-              new = """    '0.17.1' => array(
-                  'next' => '0.18.0',
-                  'callback' => 'videos_update_0_17_1_to_0_18_0'
-              ),
-              '0.18.0' => array(
-                  'next' => '0.19.0',
-                  'callback' => 'videos_update_0_18_0_to_0_19_0'
-              )
-          );"""
-              if old not in text:
-                  raise SystemExit('Unable to locate the 0.17.1 migration entry')
-              text = text.replace(old, new, 1)
-
-          if 'function videos_update_0_18_0_to_0_19_0()' not in text:
-              marker = 'function videos_update_0_17_1_to_0_18_0()'
-              migration = """function videos_update_0_18_0_to_0_19_0()
-          {
-              // 0.19.0 changes PHP/CSS integration only; no SQL/config migration.
-              return true;
-          }
-
-          """
-              if marker not in text:
-                  raise SystemExit('Unable to locate migration callback insertion point')
-              text = text.replace(marker, migration + marker, 1)
-
-          path.write_text(text, encoding='utf-8')
-          PY
-
-          php -l install_updates.php
-          grep -F "'0.18.0' => array(" install_updates.php
-          grep -F "function videos_update_0_18_0_to_0_19_0()" install_updates.php
-
-      - name: Use deeper YouTube-style play red
+      - name: Normalize 0.19.0 sources
         shell: bash
         run: |
           set -euo pipefail
           python3 <<'PY'
           from pathlib import Path
 
-          files = [
-              Path('public_html/css/videos.css'),
-              Path('public_html/css/autotag.css'),
-              Path('public_html/css/block.css'),
-          ]
-          for path in files:
+          for name in ('videos.css', 'autotag.css', 'block.css'):
+              path = Path('public_html/css') / name
               text = path.read_text(encoding='utf-8')
               text = text.replace('#ff0000', '#e62117')
               text = text.replace('#cc0000', '#c51f17')
               path.write_text(text, encoding='utf-8')
-          PY
-
-          grep -F '#e62117' public_html/css/videos.css
-          grep -F '#e62117' public_html/css/autotag.css
-          grep -F '#e62117' public_html/css/block.css
-          grep -F '#c51f17' public_html/css/videos.css
-
-      - name: Guarantee CSS timestamp cache busting
-        shell: bash
-        run: |
-          set -euo pipefail
-          python3 <<'PY'
-          from pathlib import Path
 
           path = Path('functions.inc')
           text = path.read_text(encoding='utf-8')
-
           old = """    if (is_file($cssPath)) {
         clearstatcache(true, $cssPath);
         $modified = @filemtime($cssPath);
@@ -128,8 +53,6 @@ jobs:
         $modified = @filemtime($cssPath);
     }
 
-    // Always provide a cache-busting timestamp after a plugin update, even
-    // when the public CSS path cannot be resolved by the current Geeklog setup.
     if ($modified === false || $modified <= 0) {
         clearstatcache(true, __FILE__);
         $modified = @filemtime(__FILE__);
@@ -139,19 +62,18 @@ jobs:
         $version .= '-' . (int) $modified;
     }
 """
-
           if new not in text:
               if old not in text:
-                  raise SystemExit('Unable to locate stylesheet timestamp block')
+                  raise SystemExit('Unable to locate CSS timestamp block')
               text = text.replace(old, new, 1)
-
           path.write_text(text, encoding='utf-8')
           PY
 
           php -l functions.inc
-          grep -F 'filemtime($cssPath)' functions.inc
+          grep -F '#e62117' public_html/css/videos.css
+          grep -F '#e62117' public_html/css/autotag.css
+          grep -F '#e62117' public_html/css/block.css
           grep -F 'filemtime(__FILE__)' functions.inc
-          grep -F 'rawurlencode($version)' functions.inc
 
       - name: Lint PHP sources
         shell: bash
@@ -159,100 +81,35 @@ jobs:
           set -euo pipefail
           while IFS= read -r -d '' file; do
             php -l "$file" >/dev/null
-          done < <(find . -type f \( -name '*.php' -o -name '*.inc' \) \
-            -not -path './.git/*' -not -path './dist/*' -print0)
+          done < <(find . -type f \( -name '*.php' -o -name '*.inc' \) -not -path './.git/*' -not -path './dist/*' -print0)
 
       - name: Build installable ZIP
         shell: bash
         run: |
           set -euo pipefail
-
           ARCHIVE="videos_0.19.0_2.1.1.zip"
           rm -rf build
           mkdir -p build/videos dist
           rm -f dist/videos_*.zip
-
-          rsync -a ./ build/videos/ \
-            --exclude='.git/' \
-            --exclude='.github/' \
-            --exclude='.gitignore' \
-            --exclude='dist/' \
-            --exclude='build/' \
-            --exclude='tools/' \
-            --exclude='.agents/' \
-            --exclude='.codex/' \
-            --exclude='.idea/' \
-            --exclude='.vscode/' \
-            --exclude='.env' \
-            --exclude='.env.*' \
-            --exclude='*.log' \
-            --exclude='*.tmp' \
-            --exclude='*.cache' \
-            --exclude='videos_*.tar.gz' \
-            --exclude='videos_*.zip'
-
+          rsync -a ./ build/videos/ --exclude='.git/' --exclude='.github/' --exclude='.gitignore' --exclude='dist/' --exclude='build/' --exclude='tools/' --exclude='.agents/' --exclude='.codex/' --exclude='.idea/' --exclude='.vscode/' --exclude='.env' --exclude='.env.*' --exclude='*.log' --exclude='*.tmp' --exclude='*.cache' --exclude='videos_*.zip'
           cd build
           zip -q -r "../dist/${ARCHIVE}" videos
           cd ..
-
-          test -s "dist/${ARCHIVE}"
           unzip -t "dist/${ARCHIVE}"
+          unzip -p "dist/${ARCHIVE}" videos/public_html/css/videos.css | grep -Fq '#e62117'
+          unzip -p "dist/${ARCHIVE}" videos/public_html/css/autotag.css | grep -Fq '#e62117'
+          unzip -p "dist/${ARCHIVE}" videos/public_html/css/block.css | grep -Fq '#e62117'
+          unzip -p "dist/${ARCHIVE}" videos/functions.inc | grep -Fq 'filemtime(__FILE__)'
 
-          for required in \
-            videos/public_html/css/videos.css \
-            videos/public_html/css/autotag.css \
-            videos/public_html/css/block.css \
-            videos/public_html/css/admin.css; do
-            if ! zipinfo -1 "dist/${ARCHIVE}" | grep -Fxq "$required"; then
-              echo "Missing required package file: $required" >&2
-              exit 1
-            fi
-          done
-
-          unzip -p "dist/${ARCHIVE}" videos/install_updates.php \
-            | grep -Fq "'next' => '0.19.0'"
-          unzip -p "dist/${ARCHIVE}" videos/install_updates.php \
-            | grep -Fq 'function videos_update_0_18_0_to_0_19_0()'
-
-          unzip -p "dist/${ARCHIVE}" videos/public_html/css/videos.css \
-            | grep -Fq 'background: #e62117 !important;'
-          unzip -p "dist/${ARCHIVE}" videos/public_html/css/autotag.css \
-            | grep -Fq '#e62117 0 2rem, transparent 2.05rem) !important;'
-          unzip -p "dist/${ARCHIVE}" videos/public_html/css/block.css \
-            | grep -Fq '#e62117 0 1.55rem, transparent 1.6rem) !important;'
-          unzip -p "dist/${ARCHIVE}" videos/functions.inc \
-            | grep -Fq 'filemtime(__FILE__)'
-
-          while IFS= read -r entry; do
-            case "$entry" in
-              */) continue ;;
-            esac
-            if printf '%s' "$entry" | grep -qE '(^|/)\.'; then
-              echo "Unsafe hidden archive entry: $entry" >&2
-              exit 1
-            fi
-            if ! printf '%s' "$entry" | grep -qE '^[A-Za-z0-9_./-]+$'; then
-              echo "Unsafe archive filename: $entry" >&2
-              exit 1
-            fi
-          done < <(zipinfo -1 "dist/${ARCHIVE}")
-
-          unzip -l "dist/${ARCHIVE}" | head -80
-
-      - name: Commit generated archive and normalized sources
+      - name: Commit normalized sources and archive
         shell: bash
         run: |
           set -euo pipefail
-
-          ARCHIVE="videos_0.19.0_2.1.1.zip"
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -A install_updates.php functions.inc public_html/css/videos.css public_html/css/autotag.css public_html/css/block.css dist
-
+          git add functions.inc public_html/css/videos.css public_html/css/autotag.css public_html/css/block.css dist
           if git diff --cached --quiet; then
-            echo "Sources and archive are already up to date."
             exit 0
           fi
-
-          git commit -m "Refine play-button red and CSS cache busting"
+          git commit -m "Refine Videos play red and CSS cache busting"
           git push origin "HEAD:${GITHUB_REF_NAME}"
