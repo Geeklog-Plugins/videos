@@ -105,6 +105,75 @@ jobs:
           grep -F 'background: #ff0000;' public_html/css/videos.css
           grep -F 'background: #cc0000;' public_html/css/videos.css
 
+      - name: Ensure CSS timestamp cache busting
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 <<'PY'
+          from pathlib import Path
+
+          path = Path('functions.inc')
+          text = path.read_text(encoding='utf-8')
+          old = """function VIDEOS_stylesheetLink($file)
+          {
+              global $_CONF;
+
+              return '<link rel=\"stylesheet\" type=\"text/css\" href=\"'
+                  . htmlspecialchars(
+                      rtrim($_CONF['site_url'], '/') . '/videos/css/' . $file,
+                      ENT_QUOTES,
+                      'UTF-8'
+                  )
+                  . '?v=' . rawurlencode(VIDEOS_PLUGIN_VERSION) . '\">' . \"\\n\";
+          }
+          """
+          new = """function VIDEOS_stylesheetLink($file)
+          {
+              global $_CONF;
+
+              $version = VIDEOS_PLUGIN_VERSION;
+              $cssPath = '';
+
+              if (!empty($_CONF['path_html'])) {
+                  $cssPath = rtrim($_CONF['path_html'], '/\\\\')
+                      . '/videos/css/' . $file;
+              }
+
+              if ($cssPath === '' || !is_file($cssPath)) {
+                  $cssPath = rtrim($_CONF['path'], '/\\\\')
+                      . '/plugins/videos/public_html/css/' . $file;
+              }
+
+              if (is_file($cssPath)) {
+                  clearstatcache(true, $cssPath);
+                  $modified = @filemtime($cssPath);
+                  if ($modified !== false && $modified > 0) {
+                      $version .= '-' . (int) $modified;
+                  }
+              }
+
+              return '<link rel=\"stylesheet\" type=\"text/css\" href=\"'
+                  . htmlspecialchars(
+                      rtrim($_CONF['site_url'], '/') . '/videos/css/' . $file,
+                      ENT_QUOTES,
+                      'UTF-8'
+                  )
+                  . '?v=' . rawurlencode($version) . '\">' . \"\\n\";
+          }
+          """
+
+          if old in text:
+              text = text.replace(old, new, 1)
+          elif 'rawurlencode($version)' not in text or 'filemtime($cssPath)' not in text:
+              raise SystemExit('Unable to locate VIDEOS_stylesheetLink() for cache-busting update')
+
+          path.write_text(text, encoding='utf-8')
+          PY
+
+          php -l functions.inc
+          grep -F 'filemtime($cssPath)' functions.inc
+          grep -F 'rawurlencode($version)' functions.inc
+
       - name: Lint PHP sources
         shell: bash
         run: |
@@ -176,6 +245,12 @@ jobs:
           unzip -p "dist/${ARCHIVE}" videos/public_html/css/block.css \
             | grep -Fq '#ff0000'
 
+          # Verify CSS URLs use the CSS file timestamp for cache busting.
+          unzip -p "dist/${ARCHIVE}" videos/functions.inc \
+            | grep -Fq 'filemtime($cssPath)'
+          unzip -p "dist/${ARCHIVE}" videos/functions.inc \
+            | grep -Fq 'rawurlencode($version)'
+
           # Geeklog 2.2.2 rejects archive entries with unsafe names.
           # Keep package paths ASCII-only and reject hidden path components.
           while IFS= read -r entry; do
@@ -202,7 +277,7 @@ jobs:
           ARCHIVE="videos_0.19.0_2.1.1.zip"
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -A install_updates.php public_html/css/videos.css dist
+          git add -A install_updates.php functions.inc public_html/css/videos.css dist
 
           if git diff --cached --quiet; then
             echo "Sources and archive are already up to date."
