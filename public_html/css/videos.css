@@ -62,7 +62,7 @@
     width: 4rem;
     height: 4rem;
     border-radius: 50%;
-    background: rgba(0, 0, 0, .7);
+    background: #ff0000;
     color: #fff;
     font-size: 1.65rem;
     line-height: 1;
@@ -79,7 +79,7 @@
 .videos-history-card > a:focus::before,
 .videos-ranking-thumbnail:hover::before,
 .videos-ranking-thumbnail:focus-within::before {
-    background: rgba(204, 0, 0, .9);
+    background: #cc0000;
     transform: translate(-50%, -50%) scale(1.08);
 }
 
