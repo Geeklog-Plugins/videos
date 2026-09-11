@@ -28,15 +28,9 @@ jobs:
         run: |
           set -euo pipefail
           python3 tools/normalize-admin-ui.py
-          python3 tools/add-admin-language-final.py
-          python3 tools/fix-admin-language-keys.py
           grep -Fq 'function VIDEOS_adminNavigation($active)' functions.inc
           grep -Fq 'function VIDEOS_adminPageOpen($active, $pageTitle)' functions.inc
           grep -Fq 'VIDEOS ADMIN UNIFIED UI 0.19.0' public_html/css/admin.css
-          grep -Fq 'VIDEOS ADMIN COMPAT KEYS 0.19.0' language/english.php
-          grep -Fq 'VIDEOS ADMIN COMPAT KEYS 0.19.0' language/french_france.php
-          grep -Fq 'VIDEOS ADMIN FINAL KEYS 0.19.0' language/english.php
-          grep -Fq 'VIDEOS ADMIN FINAL KEYS 0.19.0' language/french_france.php
           grep -Fq "admin_remove_help" language/english.php
           grep -Fq "admin_remove_help" language/french_france.php
           grep -Fq 'global $LANG_VIDEOS;' admin/actions.php
@@ -52,6 +46,34 @@ jobs:
             echo 'Legacy admin token renderer still exists.' >&2
             exit 1
           fi
+
+      - name: Validate admin language keys
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+
+          admin_files = [Path('admin/actions.php'), Path('admin/stats.php')]
+          lang_files = [Path('language/english.php'), Path('language/french_france.php')]
+
+          used = set()
+          for path in admin_files:
+              used.update(re.findall(r"VIDEOS_adminText\('((?:text_)[0-9a-f]{12})'\)", path.read_text(encoding='utf-8')))
+
+          if not used:
+              raise SystemExit('No admin language keys found to validate.')
+
+          for path in lang_files:
+              text = path.read_text(encoding='utf-8')
+              defined = set(re.findall(r"'((?:text_)[0-9a-f]{12})'\s*=>", text))
+              missing = sorted(used - defined)
+              if missing:
+                  raise SystemExit(f'{path}: missing admin keys: {", ".join(missing)}')
+
+          print(f'Validated {len(used)} admin language keys in English and French.')
+          PY
 
       - name: Lint PHP sources
         id: lint
@@ -82,7 +104,7 @@ jobs:
           path: lint-report.txt
           if-no-files-found: ignore
 
-      - name: Validate admin structure and language
+      - name: Validate admin structure
         shell: bash
         run: |
           set -euo pipefail
@@ -90,7 +112,6 @@ jobs:
             grep -Fq 'VIDEOS_adminPageOpen(' "$file"
             grep -Fq 'VIDEOS_adminPageClose()' "$file"
           done
-          python3 tools/fix-admin-language-keys.py
           grep -Fq 'VIDEOS_adminText(' admin/index.php
           grep -Fq 'VIDEOS_adminText(' admin/actions.php
           grep -Fq 'VIDEOS_adminText(' admin/stats.php
@@ -127,7 +148,6 @@ jobs:
           unzip -t "dist/${ARCHIVE}"
           unzip -p "dist/${ARCHIVE}" videos/functions.inc | grep -Fq 'function VIDEOS_adminPageOpen'
           unzip -p "dist/${ARCHIVE}" videos/public_html/css/admin.css | grep -Fq 'VIDEOS ADMIN UNIFIED UI 0.19.0'
-          unzip -p "dist/${ARCHIVE}" videos/language/french_france.php | grep -Fq 'VIDEOS ADMIN COMPAT KEYS 0.19.0'
           if unzip -p "dist/${ARCHIVE}" videos/admin/actions.php | grep -Fq '{{videos_admin_'; then
             echo 'Unresolved admin token found in archive.' >&2
             exit 1
@@ -144,10 +164,10 @@ jobs:
             functions.inc \
             language/english.php language/french_france.php \
             public_html/css/admin.css \
-            tools/normalize-admin-ui.py tools/fix-admin-language-keys.py tools/add-admin-language-final.py \
+            tools/normalize-admin-ui.py \
             dist
           if git diff --cached --quiet; then
             exit 0
           fi
-          git commit -m "Fix Videos admin language keys"
+          git commit -m "Normalize Videos admin interface"
           git push origin "HEAD:${GITHUB_REF_NAME}"
