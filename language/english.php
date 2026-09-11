@@ -202,6 +202,18 @@ $LANG_VIDEOS = array(
     'video_about_title' => 'About this video'
 );
 
+// 0.19.0 unified admin interface strings
+$LANG_VIDEOS['admin_actions_column'] = 'Actions';
+$LANG_VIDEOS['admin_cache_label'] = 'Cache';
+$LANG_VIDEOS['admin_yes'] = 'Yes';
+$LANG_VIDEOS['admin_no'] = 'No';
+$LANG_VIDEOS['admin_status_ok'] = 'OK';
+$LANG_VIDEOS['admin_remove_help'] = 'removes the video from the permanent catalogue, but it may be selected again.';
+$LANG_VIDEOS['admin_exclude_help'] = 'prevents it from being added again until it is explicitly allowed.';
+$LANG_VIDEOS['admin_consult'] = 'See';
+$LANG_VIDEOS['admin_byte_unit'] = 'B';
+// END 0.19.0 unified admin interface strings
+
 // 0.18.0 interface strings
 $LANG_VIDEOS['admin_nav_overview'] = 'Overview';
 $LANG_VIDEOS['admin_nav_actions'] = 'Actions';
