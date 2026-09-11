@@ -29,11 +29,182 @@ jobs:
           set -euo pipefail
           sed -i 's/#ff0000/#e62117/g; s/#cc0000/#c51f17/g' public_html/css/videos.css public_html/css/autotag.css public_html/css/block.css
           sed -i "s/\$version = VIDEOS_PLUGIN_VERSION;/\$version = VIDEOS_PLUGIN_VERSION . '-' . (int) @filemtime(__FILE__);/" functions.inc
+
+          if ! grep -Fq '$isVideosConfig' functions.inc; then
+            python3 - <<'PY'
+          from pathlib import Path
+          path = Path('functions.inc')
+          text = path.read_text(encoding='utf-8')
+          old = """    $header = '';
+    $isAdmin = strpos($path, '/admin/plugins/videos/') !== false;
+    $isPublicVideos = !$isAdmin && strpos($path, '/videos/') !== false;
+
+    if ($isPublicVideos) {
+        $header .= VIDEOS_stylesheetLink('videos.css');
+    }
+    if ($isAdmin) {
+        $header .= VIDEOS_stylesheetLink('admin.css');
+    }
+"""
+          new = """    $header = '';
+    $isAdmin = strpos($path, '/admin/plugins/videos/') !== false;
+    $isVideosConfig = strpos($path, '/admin/configuration.php') !== false
+        && isset($_GET['conf_group'])
+        && (string) $_GET['conf_group'] === 'videos';
+    $isPublicVideos = !$isAdmin && !$isVideosConfig
+        && strpos($path, '/videos/') !== false;
+
+    if ($isPublicVideos) {
+        $header .= VIDEOS_stylesheetLink('videos.css');
+    }
+    if ($isAdmin || $isVideosConfig) {
+        $header .= VIDEOS_stylesheetLink('admin.css');
+    }
+"""
+          if old not in text:
+              raise SystemExit('Unable to locate Videos header CSS routing block')
+          path.write_text(text.replace(old, new, 1), encoding='utf-8')
+          PY
+          fi
+
+          if ! grep -Fq 'VIDEOS ADMIN DASHBOARD 0.19.0' public_html/css/admin.css; then
+            cat >> public_html/css/admin.css <<'CSS'
+
+/* VIDEOS ADMIN DASHBOARD 0.19.0 */
+.videos-admin .block-content { padding-top: 0; }
+.videos-admin .videos-navigation {
+    margin: 0 -1rem 1.4rem;
+    padding: 0 1rem;
+    border-bottom: 1px solid rgba(127,127,127,.24);
+    background: rgba(127,127,127,.02);
+}
+.videos-admin .videos-navigation a { position: relative; padding: .78rem .95rem; }
+.videos-admin .videos-navigation a:hover,
+.videos-admin .videos-navigation a:focus { background: rgba(127,127,127,.07); text-decoration: none; }
+.videos-admin .videos-navigation a.is-active { background: transparent; font-weight: 700; text-decoration: none; }
+.videos-admin .videos-navigation a.is-active::after {
+    content: ""; position: absolute; left: .7rem; right: .7rem; bottom: -1px;
+    height: 3px; border-radius: 999px 999px 0 0; background: currentColor;
+}
+.videos-admin-dashboard { display: grid; gap: 1.15rem; }
+.videos-admin-intro { display: flex; align-items: center; justify-content: space-between; gap: 1rem 2rem; }
+.videos-admin-intro h2 { margin: 0 0 .3rem; font-size: 1.3rem; }
+.videos-admin-intro p { margin: 0; opacity: .72; }
+.videos-admin-quick-links { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: .5rem; }
+.videos-admin-button {
+    display: inline-flex; align-items: center; justify-content: center; min-height: 2.35rem;
+    padding: .42rem .78rem; border: 1px solid rgba(127,127,127,.3); border-radius: .4rem;
+    background: rgba(127,127,127,.055); color: inherit; font-weight: 600; text-decoration: none;
+}
+.videos-admin-button:hover,.videos-admin-button:focus { background: rgba(127,127,127,.11); text-decoration: none; }
+.videos-admin-button-primary { border-color: rgba(47,91,210,.4); background: rgba(47,91,210,.09); }
+.videos-admin-panel { padding: 1rem; border: 1px solid rgba(127,127,127,.2); border-radius: .5rem; background: rgba(127,127,127,.015); }
+.videos-admin-panel-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; margin-bottom: .8rem; }
+.videos-admin-panel-heading h2 { margin: 0; font-size: 1.05rem; }
+.videos-admin-panel-heading a { font-size: .88rem; }
+.videos-admin-metrics { display: grid; grid-template-columns: repeat(6,minmax(0,1fr)); gap: .6rem; }
+.videos-admin-metric { padding: .8rem .65rem; border-radius: .4rem; background: rgba(127,127,127,.07); text-align: center; }
+.videos-admin-metric strong { display: block; margin-bottom: .15rem; font-size: 1.4rem; line-height: 1; }
+.videos-admin-metric span { display: block; opacity: .76; font-size: .8rem; line-height: 1.25; }
+.videos-admin-integration-grid { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: .65rem; }
+.videos-admin-integration { display: flex; align-items: flex-start; justify-content: space-between; gap: .7rem; padding: .75rem; border-radius: .4rem; background: rgba(127,127,127,.045); }
+.videos-admin-integration h3 { margin: 0 0 .2rem; font-size: .94rem; }
+.videos-admin-integration p { margin: 0; opacity: .7; font-size: .82rem; line-height: 1.4; }
+.videos-admin-badge { flex: 0 0 auto; padding: .16rem .45rem; border-radius: 999px; background: rgba(40,122,50,.12); font-size: .72rem; font-weight: 700; white-space: nowrap; }
+.videos-admin-public-links { display: flex; flex-wrap: wrap; align-items: center; gap: .4rem .85rem; padding: .1rem .15rem .35rem; font-size: .86rem; }
+.videos-admin-public-links span { opacity: .65; }
+
+/* Configuration page: keep long help bubbles readable and above tabs/panels. */
+body .ui-tooltip { max-width: 32rem; z-index: 10000; }
+body .ui-tooltip-content { white-space: normal; overflow-wrap: anywhere; line-height: 1.45; }
+
+@media (max-width: 960px) {
+    .videos-admin-metrics { grid-template-columns: repeat(3,minmax(0,1fr)); }
+    .videos-admin-integration-grid { grid-template-columns: 1fr; }
+}
+@media (max-width: 700px) {
+    .videos-admin-intro { align-items: stretch; flex-direction: column; }
+    .videos-admin-quick-links { justify-content: flex-start; }
+}
+@media (max-width: 640px) {
+    .videos-admin .videos-navigation ul { overflow-x: auto; flex-wrap: nowrap; }
+    .videos-admin .videos-navigation a { white-space: nowrap; }
+    .videos-admin-metrics { grid-template-columns: repeat(2,minmax(0,1fr)); }
+    .videos-admin-quick-links,.videos-admin-button { width: 100%; box-sizing: border-box; }
+}
+CSS
+          fi
+
+          if ! grep -Fq 'function plugin_getfeedcontent_videos' geeklog_integration.php; then
+            cat >> geeklog_integration.php <<'PHP'
+
+/**
+ * Expose the persistent editorial Videos corpus to Geeklog Content Syndication.
+ * Compatible with RSS and Atom through the native Geeklog feed generator.
+ */
+function plugin_getfeedcontent_videos($feed, &$link, &$update, $feedType = 'RSS', $feedVersion = '2.0')
+{
+    global $_CONF, $_TABLES;
+
+    $link = rtrim($_CONF['site_url'], '/') . '/videos/index.php';
+    $update = '';
+    $limit = 20;
+    if (isset($_TABLES['syndication'])) {
+        $storedLimit = DB_getItem($_TABLES['syndication'], 'limits', "fid = '" . DB_escapeString($feed) . "'");
+        if (is_numeric($storedLimit) && (int) $storedLimit > 0) {
+            $limit = min(100, (int) $storedLimit);
+        }
+    }
+
+    $records = plugin_getiteminfo_videos(
+        '*',
+        '*',
+        0,
+        array('limit' => $limit, 'order' => 'modified-desc')
+    );
+    if (!is_array($records)) {
+        return array();
+    }
+
+    $content = array();
+    foreach ($records as $record) {
+        if (!is_array($record) || empty($record['url']) || empty($record['title'])) {
+            continue;
+        }
+        $timestamp = 0;
+        if (!empty($record['date-modified'])) {
+            $timestamp = strtotime($record['date-modified']);
+        }
+        if (!$timestamp && !empty($record['date-created'])) {
+            $timestamp = strtotime($record['date-created']);
+        }
+        if (!$timestamp) {
+            $timestamp = time();
+        }
+        $content[] = array(
+            'title' => (string) $record['title'],
+            'summary' => isset($record['description']) ? (string) $record['description'] : '',
+            'link' => (string) $record['url'],
+            'uid' => 0,
+            'author' => isset($record['author']) ? (string) $record['author'] : '',
+            'date' => $timestamp,
+            'format' => 'plaintext',
+            'extensions' => array()
+        );
+    }
+
+    return $content;
+}
+PHP
+          fi
+
           php -l functions.inc
+          php -l geeklog_integration.php
+          php -l admin/index.php
           grep -F '#e62117' public_html/css/videos.css
-          grep -F '#e62117' public_html/css/autotag.css
-          grep -F '#e62117' public_html/css/block.css
-          grep -F "VIDEOS_PLUGIN_VERSION . '-' . (int) @filemtime(__FILE__)" functions.inc
+          grep -F 'VIDEOS ADMIN DASHBOARD 0.19.0' public_html/css/admin.css
+          grep -F 'function plugin_getfeedcontent_videos' geeklog_integration.php
+          grep -F '$isVideosConfig' functions.inc
 
       - name: Lint PHP sources
         shell: bash
@@ -57,9 +228,9 @@ jobs:
           cd ..
           unzip -t "dist/${ARCHIVE}"
           unzip -p "dist/${ARCHIVE}" videos/public_html/css/videos.css | grep -Fq '#e62117'
-          unzip -p "dist/${ARCHIVE}" videos/public_html/css/autotag.css | grep -Fq '#e62117'
-          unzip -p "dist/${ARCHIVE}" videos/public_html/css/block.css | grep -Fq '#e62117'
-          unzip -p "dist/${ARCHIVE}" videos/functions.inc | grep -Fq "VIDEOS_PLUGIN_VERSION . '-' . (int) @filemtime(__FILE__)"
+          unzip -p "dist/${ARCHIVE}" videos/public_html/css/admin.css | grep -Fq 'VIDEOS ADMIN DASHBOARD 0.19.0'
+          unzip -p "dist/${ARCHIVE}" videos/functions.inc | grep -Fq '$isVideosConfig'
+          unzip -p "dist/${ARCHIVE}" videos/geeklog_integration.php | grep -Fq 'function plugin_getfeedcontent_videos'
 
       - name: Commit normalized sources and archive
         shell: bash
@@ -67,9 +238,9 @@ jobs:
           set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add functions.inc public_html/css/videos.css public_html/css/autotag.css public_html/css/block.css dist
+          git add admin/index.php functions.inc geeklog_integration.php public_html/css/videos.css public_html/css/autotag.css public_html/css/block.css public_html/css/admin.css dist
           if git diff --cached --quiet; then
             exit 0
           fi
-          git commit -m "Refine Videos play red and CSS cache busting"
+          git commit -m "Polish Videos admin and Geeklog integrations"
           git push origin "HEAD:${GITHUB_REF_NAME}"
