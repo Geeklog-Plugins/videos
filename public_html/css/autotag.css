@@ -22,7 +22,7 @@
 .videos-autotag-card > a::before {
     content: "\25B6";
     position: absolute;
-    z-index: 1;
+    z-index: 2;
     top: 0;
     left: 0;
     display: flex;
@@ -30,26 +30,14 @@
     aspect-ratio: 16 / 9;
     align-items: center;
     justify-content: center;
+    background: radial-gradient(circle at center, rgba(0, 0, 0, .72) 0 2rem, transparent 2.05rem);
     color: #fff;
-    font-size: 2rem;
+    font-size: 1.7rem;
     line-height: 1;
+    text-indent: .12em;
     text-shadow: 0 1px 4px rgba(0, 0, 0, .8);
     pointer-events: none;
-    transition: transform .18s ease, background-color .18s ease;
-}
-
-.videos-autotag-card > a::after {
-    content: "";
-    position: absolute;
-    z-index: 0;
-    top: calc((100% - 3.2rem) * .5);
-    left: 50%;
-    width: 4rem;
-    height: 4rem;
-    border-radius: 50%;
-    background: rgba(0, 0, 0, .68);
-    transform: translate(-50%, -50%);
-    pointer-events: none;
+    transition: background .18s ease, transform .18s ease;
 }
 
 .videos-autotag-card img {
@@ -58,7 +46,7 @@
     height: auto;
     aspect-ratio: 16 / 9;
     object-fit: cover;
-    transition: filter .18s ease;
+    transition: filter .18s ease, transform .18s ease;
 }
 
 .videos-autotag-card span {
@@ -70,9 +58,15 @@
     line-height: 1.4;
 }
 
+.videos-autotag-card > a:hover::before,
+.videos-autotag-card > a:focus::before {
+    background: radial-gradient(circle at center, rgba(204, 0, 0, .92) 0 2rem, transparent 2.05rem);
+}
+
 .videos-autotag-card > a:hover img,
 .videos-autotag-card > a:focus img {
     filter: brightness(.82);
+    transform: scale(1.01);
 }
 
 .videos-autotag-card > a:hover span,
@@ -110,11 +104,12 @@
     }
 
     .videos-autotag-card > a::before {
-        font-size: 1.55rem;
+        background: radial-gradient(circle at center, rgba(0, 0, 0, .72) 0 1.6rem, transparent 1.65rem);
+        font-size: 1.35rem;
     }
 
-    .videos-autotag-card > a::after {
-        width: 3.25rem;
-        height: 3.25rem;
+    .videos-autotag-card > a:hover::before,
+    .videos-autotag-card > a:focus::before {
+        background: radial-gradient(circle at center, rgba(204, 0, 0, .92) 0 1.6rem, transparent 1.65rem);
     }
 }
