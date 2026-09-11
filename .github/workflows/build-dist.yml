@@ -28,9 +28,12 @@ jobs:
         run: |
           set -euo pipefail
           python3 tools/normalize-admin-ui.py
+          python3 tools/fix-admin-language-keys.py
           grep -Fq 'function VIDEOS_adminNavigation($active)' functions.inc
           grep -Fq 'function VIDEOS_adminPageOpen($active, $pageTitle)' functions.inc
           grep -Fq 'VIDEOS ADMIN UNIFIED UI 0.19.0' public_html/css/admin.css
+          grep -Fq 'VIDEOS ADMIN COMPAT KEYS 0.19.0' language/english.php
+          grep -Fq 'VIDEOS ADMIN COMPAT KEYS 0.19.0' language/french_france.php
           grep -Fq "admin_remove_help" language/english.php
           grep -Fq "admin_remove_help" language/french_france.php
           grep -Fq 'global $LANG_VIDEOS;' admin/actions.php
@@ -84,6 +87,7 @@ jobs:
             grep -Fq 'VIDEOS_adminPageOpen(' "$file"
             grep -Fq 'VIDEOS_adminPageClose()' "$file"
           done
+          python3 tools/fix-admin-language-keys.py
           grep -Fq 'VIDEOS_adminText(' admin/index.php
           grep -Fq 'VIDEOS_adminText(' admin/actions.php
           grep -Fq 'VIDEOS_adminText(' admin/stats.php
@@ -120,6 +124,7 @@ jobs:
           unzip -t "dist/${ARCHIVE}"
           unzip -p "dist/${ARCHIVE}" videos/functions.inc | grep -Fq 'function VIDEOS_adminPageOpen'
           unzip -p "dist/${ARCHIVE}" videos/public_html/css/admin.css | grep -Fq 'VIDEOS ADMIN UNIFIED UI 0.19.0'
+          unzip -p "dist/${ARCHIVE}" videos/language/french_france.php | grep -Fq 'VIDEOS ADMIN COMPAT KEYS 0.19.0'
           if unzip -p "dist/${ARCHIVE}" videos/admin/actions.php | grep -Fq '{{videos_admin_'; then
             echo 'Unresolved admin token found in archive.' >&2
             exit 1
@@ -136,10 +141,10 @@ jobs:
             functions.inc \
             language/english.php language/french_france.php \
             public_html/css/admin.css \
-            tools/normalize-admin-ui.py \
+            tools/normalize-admin-ui.py tools/fix-admin-language-keys.py \
             dist
           if git diff --cached --quiet; then
             exit 0
           fi
-          git commit -m "Simplify and unify Videos admin interface"
+          git commit -m "Fix Videos admin language keys"
           git push origin "HEAD:${GITHUB_REF_NAME}"
