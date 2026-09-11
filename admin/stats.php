@@ -16,9 +16,9 @@ if (!SEC_hasRights('videos.admin')) {
 $bootstrap = new Videos_Bootstrap($_CONF);
 if (!$bootstrap->isReady()) {
     echo COM_createHTMLDocument(
-        COM_showMessageText(VIDEOS_localizeAdminText(VIDEOS_adminText(VIDEOS_adminText('text_ad4bee7e9ff4'))), '', true),
+        COM_showMessageText(VIDEOS_localizeAdminText(VIDEOS_adminText('text_ad4bee7e9ff4')), '', true),
         array(
-            'pagetitle' => VIDEOS_localizeAdminText(VIDEOS_adminText(VIDEOS_adminText('text_695c8c330b8f'))),
+            'pagetitle' => VIDEOS_localizeAdminText(VIDEOS_adminText('text_695c8c330b8f')),
             'headercode' => videos_stats_header_code()
         )
     );
@@ -37,12 +37,12 @@ $searchLimit = isset($_VIDEOS_CONF['youtube_daily_search_limit'])
     ? max(0, (int) $_VIDEOS_CONF['youtube_daily_search_limit']) : 20;
 $searchCount = isset($counts['search']) ? (int) $counts['search'] : 0;
 $localSearchState = ($searchLimit > 0 && $searchCount >= $searchLimit)
-    ? VIDEOS_adminText(VIDEOS_adminText('text_721e1db12433')) . $searchCount . '/' . $searchLimit . ')'
+    ? VIDEOS_adminText('text_721e1db12433') . $searchCount . '/' . $searchLimit . ')'
     : $searchCount . '/' . ($searchLimit > 0 ? $searchLimit : '∞');
 $lastApiError = !empty($quotaData['last_error']['code'])
-    ? (string) $quotaData['last_error']['code'] : VIDEOS_adminText(VIDEOS_adminText('text_a54f1197e621'));
+    ? (string) $quotaData['last_error']['code'] : VIDEOS_adminText('text_a54f1197e621');
 $lastApiErrorAt = !empty($quotaData['last_error']['at'])
-    ? videos_stats_date_text($quotaData['last_error']['at']) : VIDEOS_adminText(VIDEOS_adminText('text_55532ba13b84'));
+    ? videos_stats_date_text($quotaData['last_error']['at']) : VIDEOS_adminText('text_55532ba13b84');
 $lastRejection = isset($quotaData['last_rejection']) && is_array($quotaData['last_rejection'])
     ? $quotaData['last_rejection'] : array();
 $cacheStatus = (new Videos_CacheMaintenance($store))->inspect();
@@ -93,99 +93,99 @@ if (count($videoRanking) > 0) {
     }
 }
 
-$html = '<div class="videos-admin"><h1>{{videos_admin_{{videos_admin_text_695c8c330b8f}}}}</h1>'
+$html = '<div class="videos-admin"><h1>{{videos_admin_text_695c8c330b8f}}</h1>'
     . videos_stats_nav($_CONF, 'stats')
-    . '<section class="videos-admin-section"><h2>{{videos_admin_{{videos_admin_text_50dbebed149b}}}}</h2>'
+    . '<section class="videos-admin-section"><h2>{{videos_admin_text_50dbebed149b}}</h2>'
     . '<div class="videos-stat-grid">'
     . videos_stat_card(
-        VIDEOS_adminText(VIDEOS_adminText('text_5793dbff4b44')),
+        VIDEOS_adminText('text_5793dbff4b44'),
         (int) $reservoirStatus['item_count'],
-        VIDEOS_adminText(VIDEOS_adminText('text_be9104ffe37e'))
+        VIDEOS_adminText('text_be9104ffe37e')
     )
     . videos_stat_card(
-        VIDEOS_adminText(VIDEOS_adminText('text_ad66e72e75ec')),
+        VIDEOS_adminText('text_ad66e72e75ec'),
         $searchableCount,
-        VIDEOS_adminText(VIDEOS_adminText('text_36868dbab548'))
+        VIDEOS_adminText('text_36868dbab548')
     )
     . videos_stat_card(
-        VIDEOS_adminText(VIDEOS_adminText('text_b3d4e15e39bf')),
+        VIDEOS_adminText('text_b3d4e15e39bf'),
         count($videoRanking),
-        VIDEOS_adminText(VIDEOS_adminText('text_4bf56ef2cc6c'))
+        VIDEOS_adminText('text_4bf56ef2cc6c')
     )
     . videos_stat_card(
-        VIDEOS_adminText(VIDEOS_adminText('text_b9bef52d4aa3')),
+        VIDEOS_adminText('text_b9bef52d4aa3'),
         count($channelRanking),
-        VIDEOS_adminText(VIDEOS_adminText('text_d50b0123f1de'))
+        VIDEOS_adminText('text_d50b0123f1de')
     )
     . videos_stat_card(
-        VIDEOS_adminText(VIDEOS_adminText('text_16bb358770de')),
+        VIDEOS_adminText('text_16bb358770de'),
         count($priorityChannels),
-        VIDEOS_adminText(VIDEOS_adminText('text_b83fc7e45471'))
+        VIDEOS_adminText('text_b83fc7e45471')
     )
     . videos_stat_card(
-        VIDEOS_adminText(VIDEOS_adminText('text_3696c9b66256')),
+        VIDEOS_adminText('text_3696c9b66256'),
         (int) $poolStatus['item_count'],
-        VIDEOS_adminText(VIDEOS_adminText('text_184e3abfc03a'))
+        VIDEOS_adminText('text_184e3abfc03a')
     )
     . videos_stat_card(
-        VIDEOS_adminText(VIDEOS_adminText('text_4072238c8cc7')),
+        VIDEOS_adminText('text_4072238c8cc7'),
         isset($poolStatus['pinned_count'])
             ? (int) $poolStatus['pinned_count'] : 0,
-        VIDEOS_adminText(VIDEOS_adminText('text_7d57e2bb142d'))
+        VIDEOS_adminText('text_7d57e2bb142d')
     )
     . videos_stat_card(
-        VIDEOS_adminText(VIDEOS_adminText('text_f10feb2274ea')),
+        VIDEOS_adminText('text_f10feb2274ea'),
         (int) $poolStatus['excluded_count'],
-        VIDEOS_adminText(VIDEOS_adminText('text_007f0fff6df3'))
+        VIDEOS_adminText('text_007f0fff6df3')
     )
     . '</div></section>';
 
-$html .= '<section class="videos-admin-section"><h2>{{videos_admin_{{videos_admin_text_65748d98f850}}}}</h2>'
+$html .= '<section class="videos-admin-section"><h2>{{videos_admin_text_65748d98f850}}</h2>'
     . '<div class="videos-stat-grid videos-stat-grid-compact">'
     . videos_stat_card(
-        VIDEOS_adminText(VIDEOS_adminText('text_696467c95b05')),
+        VIDEOS_adminText('text_696467c95b05'),
         isset($counts['search']) ? (int) $counts['search'] : 0,
-        VIDEOS_adminText(VIDEOS_adminText('text_7cd3fe26311e'))
+        VIDEOS_adminText('text_7cd3fe26311e')
     )
     . videos_stat_card(
-        VIDEOS_adminText(VIDEOS_adminText('text_5e2d327ccd27')),
+        VIDEOS_adminText('text_5e2d327ccd27'),
         isset($counts['videos']) ? (int) $counts['videos'] : 0,
-        VIDEOS_adminText(VIDEOS_adminText('text_01c816c87508'))
+        VIDEOS_adminText('text_01c816c87508')
     )
     . videos_stat_card(
-        VIDEOS_adminText(VIDEOS_adminText('text_801bc4757eb1')),
+        VIDEOS_adminText('text_801bc4757eb1'),
         isset($counts['channels']) ? (int) $counts['channels'] : 0,
-        VIDEOS_adminText(VIDEOS_adminText('text_c4620a96701e'))
+        VIDEOS_adminText('text_c4620a96701e')
     )
     . videos_stat_card(
-        VIDEOS_adminText(VIDEOS_adminText('text_229f2b1943a8')),
+        VIDEOS_adminText('text_229f2b1943a8'),
         !empty($quotaData['suspended']) ? 'Oui' : 'Non',
-        VIDEOS_adminText(VIDEOS_adminText('text_a715911d13d4'))
+        VIDEOS_adminText('text_a715911d13d4')
     )
     . videos_stat_card(
-        VIDEOS_adminText(VIDEOS_adminText('text_27ff1cce04c6')),
+        VIDEOS_adminText('text_27ff1cce04c6'),
         $localSearchState,
-        VIDEOS_adminText(VIDEOS_adminText('text_fee22e6ee72b'))
+        VIDEOS_adminText('text_fee22e6ee72b')
     )
     . videos_stat_card(
-        VIDEOS_adminText(VIDEOS_adminText('text_2dc02504e6fd')),
+        VIDEOS_adminText('text_2dc02504e6fd'),
         videos_stats_date_text(isset($quotaData['last_search_at']) ? $quotaData['last_search_at'] : null),
-        VIDEOS_adminText(VIDEOS_adminText('text_7a78c348afb3')),
+        VIDEOS_adminText('text_7a78c348afb3'),
         true
     )
     . videos_stat_card(
-        VIDEOS_adminText(VIDEOS_adminText('text_16e8b06800bc')),
+        VIDEOS_adminText('text_16e8b06800bc'),
         $lastApiError,
         $lastApiErrorAt,
         true
     )
     . videos_stat_card(
-        VIDEOS_adminText(VIDEOS_adminText('text_160478e94434')),
+        VIDEOS_adminText('text_160478e94434'),
         videos_stats_date_text(
             isset($quotaData['last_success_at'])
                 ? $quotaData['last_success_at'] : null
         ),
-        VIDEOS_adminText(VIDEOS_adminText('text_4bdda76e1cba')),
+        VIDEOS_adminText('text_4bdda76e1cba'),
         true
     )
     . '</div>';
@@ -194,8 +194,8 @@ if (!empty($lastRejection)) {
     $method = isset($lastRejection['method']) ? (string) $lastRejection['method'] : '';
     $count = isset($lastRejection['count']) ? (int) $lastRejection['count'] : 0;
     $limit = isset($lastRejection['limit']) ? (int) $lastRejection['limit'] : 0;
-    $at = !empty($lastRejection['at']) ? videos_stats_date_text($lastRejection['at']) : VIDEOS_adminText(VIDEOS_adminText('text_55532ba13b84'));
-    $html .= '<p class="videos-admin-help"><strong>{{videos_admin_{{videos_admin_text_41059bb643de}}}}</strong> '
+    $at = !empty($lastRejection['at']) ? videos_stats_date_text($lastRejection['at']) : VIDEOS_adminText('text_55532ba13b84');
+    $html .= '<p class="videos-admin-help"><strong>{{videos_admin_text_41059bb643de}}</strong> '
         . htmlspecialchars($method, ENT_QUOTES, 'UTF-8') . ' — '
         . htmlspecialchars($reason, ENT_QUOTES, 'UTF-8') . ' (' . $count . '/' . $limit . ') — '
         . htmlspecialchars($at, ENT_QUOTES, 'UTF-8') . '.</p>';
@@ -203,16 +203,16 @@ if (!empty($lastRejection)) {
 $html .= '</section>';
 
 $cacheLabels = array(
-    'search' => VIDEOS_adminText(VIDEOS_adminText('text_5335de22db2d')),
-    'videos' => VIDEOS_adminText(VIDEOS_adminText('text_6d32810e19b0')),
-    'channels' => VIDEOS_adminText(VIDEOS_adminText('text_13849355df98')),
-    'availability' => VIDEOS_adminText(VIDEOS_adminText('text_412bbe5e0703'))
+    'search' => VIDEOS_adminText('text_5335de22db2d'),
+    'videos' => VIDEOS_adminText('text_6d32810e19b0'),
+    'channels' => VIDEOS_adminText('text_13849355df98'),
+    'availability' => VIDEOS_adminText('text_412bbe5e0703')
 );
 $html .= '<section class="videos-admin-section"><h2>Cache</h2>'
     . '<div class="videos-admin-table-wrap">'
     . '<table class="admin-list videos-admin-table"><thead><tr>'
     . '<th>Cache</th><th>{{videos_admin_text_f41ca442a8d6}}</th><th>{{videos_admin_text_3b18e8e33250}}</th>'
-    . '<th>{{videos_admin_{{videos_admin_text_fcbf6472e074}}}}</th></tr></thead><tbody>';
+    . '<th>{{videos_admin_text_fcbf6472e074}}</th></tr></thead><tbody>';
 foreach ($cacheLabels as $scope => $label) {
     $item = isset($cacheStatus[$scope]) ? $cacheStatus[$scope] : array();
     $html .= '<tr><td>' . htmlspecialchars($label, ENT_QUOTES, 'UTF-8')
@@ -225,17 +225,17 @@ foreach ($cacheLabels as $scope => $label) {
 }
 $html .= '</tbody></table></div></section>';
 
-$html .= '<section class="videos-admin-section"><h2>{{videos_admin_{{videos_admin_text_21f56c736dd7}}}}</h2>'
+$html .= '<section class="videos-admin-section"><h2>{{videos_admin_text_21f56c736dd7}}</h2>'
     . '<div class="videos-integration-grid">'
-    . '<div><strong>{{videos_admin_{{videos_admin_text_1fac67f04852}}}}</strong><span>{{videos_admin_text_a733b809d2f1}}</span></div>'
-    . '<div><strong>{{videos_admin_{{videos_admin_text_f31987d233f9}}}}</strong><span>{{videos_admin_text_f13a33c01a31}}</span></div>'
-    . '<div><strong>{{videos_admin_{{videos_admin_text_1ee065b38a78}}}}</strong><span>{{videos_admin_text_a733b809d2f1}}</span></div>'
-    . '<div><strong>{{videos_admin_{{videos_admin_text_1c2d095511c3}}}}</strong><span>{{videos_admin_text_a733b809d2f1}}</span></div>'
+    . '<div><strong>{{videos_admin_text_1fac67f04852}}</strong><span>{{videos_admin_text_a733b809d2f1}}</span></div>'
+    . '<div><strong>{{videos_admin_text_f31987d233f9}}</strong><span>{{videos_admin_text_f13a33c01a31}}</span></div>'
+    . '<div><strong>{{videos_admin_text_1ee065b38a78}}</strong><span>{{videos_admin_text_a733b809d2f1}}</span></div>'
+    . '<div><strong>{{videos_admin_text_1c2d095511c3}}</strong><span>{{videos_admin_text_a733b809d2f1}}</span></div>'
     . '<div><strong>IndexNow</strong><span>'
-    . (function_exists('send_to_indexnow') ? VIDEOS_adminText(VIDEOS_adminText('text_b9cb1c7d82fc')) : VIDEOS_adminText(VIDEOS_adminText('text_7cc7897d5382')))
+    . (function_exists('send_to_indexnow') ? VIDEOS_adminText('text_b9cb1c7d82fc') : VIDEOS_adminText('text_7cc7897d5382'))
     . '</span></div>'
     . '</div>'
-    . '<details class="videos-advanced-field"><summary>{{videos_admin_{{videos_admin_text_804661ad2853}}}}</summary>'
+    . '<details class="videos-advanced-field"><summary>{{videos_admin_text_804661ad2853}}</summary>'
     . '<p><code>plugin_searchtypes_videos()</code> · <code>plugin_dopluginsearch_videos()</code><br>'
     . '<code>plugin_statssummary_videos()</code> · <code>plugin_showstats_videos()</code><br>'
     . '<code>plugin_getiteminfo_videos()</code> · <code>plugin_idtourl_videos()</code></p>'
@@ -253,20 +253,20 @@ if ($seoDiagnostic !== '') {
         'embedUrl' => strpos($seoDiagnostic, '"embedUrl"') !== false
     );
     $allOk = !in_array(false, $checks, true);
-    $html .= '<p><strong>{{videos_admin_text_07b942be7aef}}' . ($allOk ? 'OK' : VIDEOS_adminText(VIDEOS_adminText('text_994b6ba1c20e'))) . '</strong></p>'
+    $html .= '<p><strong>{{videos_admin_text_07b942be7aef}}' . ($allOk ? 'OK' : VIDEOS_adminText('text_994b6ba1c20e')) . '</strong></p>'
         . '<ul class="videos-admin-status">';
     foreach ($checks as $label => $ok) {
         $html .= '<li>' . htmlspecialchars($label, ENT_QUOTES, 'UTF-8') . ' : '
-            . ($ok ? 'OK' : VIDEOS_adminText(VIDEOS_adminText('text_994b6ba1c20e'))) . '</li>';
+            . ($ok ? 'OK' : VIDEOS_adminText('text_994b6ba1c20e')) . '</li>';
     }
-    $html .= '</ul><details class="videos-advanced-field"><summary>{{videos_admin_{{videos_admin_text_605c3eed118a}}}}</summary>'
+    $html .= '</ul><details class="videos-advanced-field"><summary>{{videos_admin_text_605c3eed118a}}</summary>'
         . '<p>{{videos_admin_text_a5d43ef5c22a}} : <code>'
         . htmlspecialchars($seoDiagnosticVideoId, ENT_QUOTES, 'UTF-8')
         . '</code></p><pre class="videos-seo-preview"><code>'
         . htmlspecialchars($seoDiagnostic, ENT_QUOTES, 'UTF-8')
         . '</code></pre></details>';
 } else {
-    $html .= '<p>{{videos_admin_{{videos_admin_text_5e1f9ce9c113}}}}</p>';
+    $html .= '<p>{{videos_admin_text_5e1f9ce9c113}}</p>';
 }
 $html .= '</section>';
 
@@ -276,7 +276,7 @@ $html .= '</div>';
 echo COM_createHTMLDocument(
     VIDEOS_adminRender($html),
     array(
-        'pagetitle' => VIDEOS_localizeAdminText(VIDEOS_adminText(VIDEOS_adminText('text_695c8c330b8f'))),
+        'pagetitle' => VIDEOS_localizeAdminText(VIDEOS_adminText('text_695c8c330b8f')),
         'headercode' => videos_stats_header_code()
     )
 );
@@ -333,7 +333,7 @@ function videos_stats_header_code()
 function videos_stats_date_text($value)
 {
     if (empty($value)) {
-        return VIDEOS_localizeAdminText(VIDEOS_adminText(VIDEOS_adminText('text_55532ba13b84')));
+        return VIDEOS_localizeAdminText(VIDEOS_adminText('text_55532ba13b84'));
     }
     $timestamp = strtotime((string) $value);
     if ($timestamp !== false && function_exists('COM_getUserDateTimeFormat')) {
