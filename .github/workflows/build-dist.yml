@@ -31,6 +31,55 @@ jobs:
           set -euo pipefail
           git pull --ff-only origin "${GITHUB_REF_NAME}"
 
+      - name: Ensure 0.19.0 upgrade path
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 <<'PY'
+          from pathlib import Path
+
+          path = Path('install_updates.php')
+          text = path.read_text(encoding='utf-8')
+
+          if "'0.18.0' => array(" not in text:
+              old = """    '0.17.1' => array(
+                  'next' => '0.18.0',
+                  'callback' => 'videos_update_0_17_1_to_0_18_0'
+              )
+          );"""
+              new = """    '0.17.1' => array(
+                  'next' => '0.18.0',
+                  'callback' => 'videos_update_0_17_1_to_0_18_0'
+              ),
+              '0.18.0' => array(
+                  'next' => '0.19.0',
+                  'callback' => 'videos_update_0_18_0_to_0_19_0'
+              )
+          );"""
+              if old not in text:
+                  raise SystemExit('Unable to locate the 0.17.1 migration entry')
+              text = text.replace(old, new, 1)
+
+          if 'function videos_update_0_18_0_to_0_19_0()' not in text:
+              marker = 'function videos_update_0_17_1_to_0_18_0()'
+              migration = """function videos_update_0_18_0_to_0_19_0()
+          {
+              // 0.19.0 changes PHP/CSS integration only; no SQL/config migration.
+              return true;
+          }
+
+          """
+              if marker not in text:
+                  raise SystemExit('Unable to locate migration callback insertion point')
+              text = text.replace(marker, migration + marker, 1)
+
+          path.write_text(text, encoding='utf-8')
+          PY
+
+          php -l install_updates.php
+          grep -F "'0.18.0' => array(" install_updates.php
+          grep -F "function videos_update_0_18_0_to_0_19_0()" install_updates.php
+
       - name: Lint PHP sources
         shell: bash
         run: |
@@ -88,6 +137,12 @@ jobs:
             fi
           done
 
+          # Verify the migration chain reaches the archive version.
+          unzip -p "dist/${ARCHIVE}" videos/install_updates.php \
+            | grep -Fq "'next' => '0.19.0'"
+          unzip -p "dist/${ARCHIVE}" videos/install_updates.php \
+            | grep -Fq 'function videos_update_0_18_0_to_0_19_0()'
+
           # Geeklog 2.2.2 rejects archive entries with unsafe names.
           # Keep package paths ASCII-only and reject hidden path components.
           while IFS= read -r entry; do
@@ -106,7 +161,7 @@ jobs:
 
           unzip -l "dist/${ARCHIVE}" | head -80
 
-      - name: Commit generated archive
+      - name: Commit generated archive and migration source
         shell: bash
         run: |
           set -euo pipefail
@@ -114,12 +169,12 @@ jobs:
           ARCHIVE="videos_0.19.0_2.1.1.zip"
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -A dist
+          git add -A install_updates.php dist
 
           if git diff --cached --quiet; then
-            echo "Archive is already up to date."
+            echo "Migration source and archive are already up to date."
             exit 0
           fi
 
-          git commit -m "Build ${ARCHIVE}"
+          git commit -m "Fix upgrade path and rebuild ${ARCHIVE}"
           git push origin "HEAD:${GITHUB_REF_NAME}"
