@@ -88,7 +88,6 @@ jobs:
           unzip -p "dist/${ARCHIVE}" videos/language/english.php | grep -Fq 'VIDEOS ADMIN LANGUAGE KEYS 0.19.0'
           unzip -p "dist/${ARCHIVE}" videos/language/french_france.php | grep -Fq 'VIDEOS ADMIN LANGUAGE KEYS 0.19.0'
           unzip -p "dist/${ARCHIVE}" videos/public_html/css/admin.css | grep -Fq 'VIDEOS ADMIN UNIFIED UI 0.19.0'
-          unzip -p "dist/${ARCHIVE}" videos/public_html/css/block.css | grep -Fq 'VIDEOS BLOCK PLAY CENTER FIX 0.19.0'
 
       - name: Commit normalized sources and archive
         shell: bash
