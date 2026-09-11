@@ -80,56 +80,77 @@ jobs:
           grep -F "'0.18.0' => array(" install_updates.php
           grep -F "function videos_update_0_18_0_to_0_19_0()" install_updates.php
 
-      - name: Ensure red play buttons at rest
+      - name: Use deeper YouTube-style play red
         shell: bash
         run: |
           set -euo pipefail
           python3 <<'PY'
           from pathlib import Path
 
-          replacements = {
-              Path('public_html/css/videos.css'): [
-                  ('background: #ff0000;', 'background: #ff0000 !important;'),
-                  ('background: #cc0000;', 'background: #cc0000 !important;'),
-              ],
-              Path('public_html/css/autotag.css'): [
-                  ('background: radial-gradient(circle at center, #ff0000 0 2rem, transparent 2.05rem);',
-                   'background: radial-gradient(circle at center, #ff0000 0 2rem, transparent 2.05rem) !important;'),
-                  ('background: radial-gradient(circle at center, #cc0000 0 2rem, transparent 2.05rem);',
-                   'background: radial-gradient(circle at center, #cc0000 0 2rem, transparent 2.05rem) !important;'),
-                  ('background: radial-gradient(circle at center, #ff0000 0 1.6rem, transparent 1.65rem);',
-                   'background: radial-gradient(circle at center, #ff0000 0 1.6rem, transparent 1.65rem) !important;'),
-                  ('background: radial-gradient(circle at center, #cc0000 0 1.6rem, transparent 1.65rem);',
-                   'background: radial-gradient(circle at center, #cc0000 0 1.6rem, transparent 1.65rem) !important;'),
-              ],
-              Path('public_html/css/block.css'): [
-                  ('background: radial-gradient(circle at center, #ff0000 0 1.55rem, transparent 1.6rem);',
-                   'background: radial-gradient(circle at center, #ff0000 0 1.55rem, transparent 1.6rem) !important;'),
-                  ('background: radial-gradient(circle at center, #cc0000 0 1.55rem, transparent 1.6rem);',
-                   'background: radial-gradient(circle at center, #cc0000 0 1.55rem, transparent 1.6rem) !important;'),
-              ],
-          }
-
-          for path, pairs in replacements.items():
+          files = [
+              Path('public_html/css/videos.css'),
+              Path('public_html/css/autotag.css'),
+              Path('public_html/css/block.css'),
+          ]
+          for path in files:
               text = path.read_text(encoding='utf-8')
-              for old, new in pairs:
-                  if new in text:
-                      continue
-                  if old not in text:
-                      raise SystemExit('Unable to locate expected play-button rule in %s: %s' % (path, old))
-                  text = text.replace(old, new)
+              text = text.replace('#ff0000', '#e62117')
+              text = text.replace('#cc0000', '#c51f17')
               path.write_text(text, encoding='utf-8')
           PY
 
-          grep -F 'background: #ff0000 !important;' public_html/css/videos.css
-          grep -F '#ff0000 0 2rem, transparent 2.05rem) !important;' public_html/css/autotag.css
-          grep -F '#ff0000 0 1.55rem, transparent 1.6rem) !important;' public_html/css/block.css
+          grep -F '#e62117' public_html/css/videos.css
+          grep -F '#e62117' public_html/css/autotag.css
+          grep -F '#e62117' public_html/css/block.css
+          grep -F '#c51f17' public_html/css/videos.css
 
-      - name: Ensure CSS timestamp cache busting
+      - name: Guarantee CSS timestamp cache busting
         shell: bash
         run: |
           set -euo pipefail
+          python3 <<'PY'
+          from pathlib import Path
+
+          path = Path('functions.inc')
+          text = path.read_text(encoding='utf-8')
+
+          old = """    if (is_file($cssPath)) {
+        clearstatcache(true, $cssPath);
+        $modified = @filemtime($cssPath);
+        if ($modified !== false && $modified > 0) {
+            $version .= '-' . (int) $modified;
+        }
+    }
+"""
+          new = """    $modified = false;
+    if (is_file($cssPath)) {
+        clearstatcache(true, $cssPath);
+        $modified = @filemtime($cssPath);
+    }
+
+    // Always provide a cache-busting timestamp after a plugin update, even
+    // when the public CSS path cannot be resolved by the current Geeklog setup.
+    if ($modified === false || $modified <= 0) {
+        clearstatcache(true, __FILE__);
+        $modified = @filemtime(__FILE__);
+    }
+
+    if ($modified !== false && $modified > 0) {
+        $version .= '-' . (int) $modified;
+    }
+"""
+
+          if new not in text:
+              if old not in text:
+                  raise SystemExit('Unable to locate stylesheet timestamp block')
+              text = text.replace(old, new, 1)
+
+          path.write_text(text, encoding='utf-8')
+          PY
+
+          php -l functions.inc
           grep -F 'filemtime($cssPath)' functions.inc
+          grep -F 'filemtime(__FILE__)' functions.inc
           grep -F 'rawurlencode($version)' functions.inc
 
       - name: Lint PHP sources
@@ -194,13 +215,13 @@ jobs:
             | grep -Fq 'function videos_update_0_18_0_to_0_19_0()'
 
           unzip -p "dist/${ARCHIVE}" videos/public_html/css/videos.css \
-            | grep -Fq 'background: #ff0000 !important;'
+            | grep -Fq 'background: #e62117 !important;'
           unzip -p "dist/${ARCHIVE}" videos/public_html/css/autotag.css \
-            | grep -Fq '#ff0000 0 2rem, transparent 2.05rem) !important;'
+            | grep -Fq '#e62117 0 2rem, transparent 2.05rem) !important;'
           unzip -p "dist/${ARCHIVE}" videos/public_html/css/block.css \
-            | grep -Fq '#ff0000 0 1.55rem, transparent 1.6rem) !important;'
+            | grep -Fq '#e62117 0 1.55rem, transparent 1.6rem) !important;'
           unzip -p "dist/${ARCHIVE}" videos/functions.inc \
-            | grep -Fq 'filemtime($cssPath)'
+            | grep -Fq 'filemtime(__FILE__)'
 
           while IFS= read -r entry; do
             case "$entry" in
@@ -233,5 +254,5 @@ jobs:
             exit 0
           fi
 
-          git commit -m "Force red play buttons and rebuild ${ARCHIVE}"
+          git commit -m "Refine play-button red and CSS cache busting"
           git push origin "HEAD:${GITHUB_REF_NAME}"
