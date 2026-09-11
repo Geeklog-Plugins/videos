@@ -268,62 +268,60 @@ body .ui-tooltip-content{white-space:normal;overflow-wrap:anywhere;line-height:1
 @media(max-width:700px){.videos-admin-intro{align-items:stretch;flex-direction:column}.videos-admin-quick-links{justify-content:flex-start}}
 @media(max-width:640px){.videos-admin .videos-navigation ul{overflow-x:auto;flex-wrap:nowrap}.videos-admin .videos-navigation a{white-space:nowrap}.videos-admin-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.videos-admin-quick-links,.videos-admin-button{width:100%;box-sizing:border-box}}
 
-/* Harmonized shell for Overview, Actions, Statistics and Moderation. */
-.videos-admin:not(.block-center) {
-    overflow: hidden;
-    border: 1px solid rgba(127, 127, 127, .22);
-    border-radius: .65rem;
-    background: rgba(255, 255, 255, .01);
-    box-shadow: 0 2px 10px rgba(0, 0, 0, .035);
+/* VIDEOS ADMIN UNIFIED UI 0.19.0 */
+.videos-admin {
+    --videos-admin-gap: 1.25rem;
 }
 
-.videos-admin:not(.block-center) > h1 {
+.videos-admin > .block-content {
+    padding: 0 var(--videos-admin-gap) var(--videos-admin-gap);
+    box-sizing: border-box;
+}
+
+.videos-admin .videos-navigation {
+    margin: 0 calc(-1 * var(--videos-admin-gap)) var(--videos-admin-gap);
+    padding: 0 var(--videos-admin-gap);
+    box-sizing: border-box;
+}
+
+.videos-admin-page-header {
+    margin: 0 0 1rem;
+    padding: 0;
+}
+
+.videos-admin-page-header h1 {
     margin: 0;
-    padding: 1.05rem 1.4rem;
-    border-bottom: 1px solid rgba(127, 127, 127, .2);
-    background: rgba(47, 91, 210, .045);
-    font-size: 1.35rem;
+    font-size: 1.3rem;
     line-height: 1.25;
 }
 
-.videos-admin:not(.block-center) > .videos-navigation {
-    margin: 0 0 1.25rem;
-    padding: 0 1.15rem;
-}
-
-.videos-admin:not(.block-center) > .videos-admin-section,
-.videos-admin:not(.block-center) > .videos-admin-help,
-.videos-admin:not(.block-center) > .uk-alert,
-.videos-admin:not(.block-center) > .alert,
-.videos-admin:not(.block-center) > p,
-.videos-admin:not(.block-center) > details {
-    margin-left: 1.15rem;
-    margin-right: 1.15rem;
+.videos-admin-dashboard,
+.videos-admin-section,
+.videos-admin-panel,
+.videos-stat-grid,
+.videos-integration-grid,
+.videos-admin-results,
+.videos-admin-help,
+.videos-admin > .block-content > details,
+.videos-admin > .block-content > form,
+.videos-admin > .block-content > p {
+    box-sizing: border-box;
 }
 
 .videos-admin-section,
 .videos-admin-panel {
-    border-color: rgba(127, 127, 127, .2);
+    margin: 0 0 1rem;
+    padding: 1rem;
+    border: 1px solid rgba(127, 127, 127, .18);
     border-radius: .5rem;
-    background: rgba(127, 127, 127, .018);
+    background: rgba(127, 127, 127, .022);
     box-shadow: none;
 }
 
-.videos-admin-section {
-    padding: 1rem;
-}
-
-.videos-admin-section > h2 {
-    margin: 0 0 .85rem;
-    padding-bottom: .6rem;
-    border-bottom-color: rgba(127, 127, 127, .18);
-    font-size: 1.05rem;
-}
-
-.videos-admin-section > p:first-of-type {
+.videos-admin-section > h2,
+.videos-admin-panel-heading h2 {
     margin-top: 0;
-    color: inherit;
-    opacity: .8;
+    letter-spacing: -.01em;
 }
 
 .videos-admin-form + .videos-admin-form {
@@ -335,21 +333,20 @@ body .ui-tooltip-content{white-space:normal;overflow-wrap:anywhere;line-height:1
 .videos-admin-form select {
     border-color: rgba(127, 127, 127, .34);
     border-radius: .42rem;
-    background: rgba(255, 255, 255, .03);
 }
 
-.videos-admin-form input[type="text"]:focus,
-.videos-admin-form input[type="password"]:focus,
-.videos-admin-form select:focus {
-    border-color: rgba(47, 91, 210, .65);
-    outline: 2px solid rgba(47, 91, 210, .12);
-    outline-offset: 1px;
+.videos-admin-form input:focus,
+.videos-admin-form select:focus,
+.videos-admin button:focus,
+.videos-admin a:focus {
+    outline: 2px solid rgba(54, 89, 210, .42);
+    outline-offset: 2px;
 }
 
 .videos-admin button,
 .videos-admin input[type="submit"] {
-    min-height: 2.4rem;
-    padding: .45rem .8rem;
+    min-height: 2.35rem;
+    padding: .42rem .78rem;
     border: 1px solid rgba(127, 127, 127, .3);
     border-radius: .42rem;
     background: rgba(127, 127, 127, .07);
@@ -365,167 +362,74 @@ body .ui-tooltip-content{white-space:normal;overflow-wrap:anywhere;line-height:1
     background: rgba(127, 127, 127, .13);
 }
 
-.videos-admin-table {
-    border: 1px solid rgba(127, 127, 127, .18);
-    border-radius: .4rem;
-    overflow: hidden;
+.videos-stat-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: .75rem;
 }
 
-.videos-admin-table th {
-    background: rgba(127, 127, 127, .075);
-    font-size: .86rem;
-    letter-spacing: .01em;
+.videos-stat-card {
+    display: flex;
+    flex-direction: column;
+    min-height: 105px;
+    padding: .85rem;
+    border: 1px solid rgba(127, 127, 127, .16);
+    border-radius: .45rem;
+    background: rgba(127, 127, 127, .045);
 }
 
-.videos-admin-table td {
-    line-height: 1.4;
+.videos-stat-value {
+    margin-bottom: .35rem;
+    overflow-wrap: anywhere;
+    font-size: 1.65rem;
+    font-weight: 700;
+    line-height: 1.05;
 }
 
-.videos-admin-table tbody tr:nth-child(even) {
-    background: rgba(127, 127, 127, .025);
+.videos-stat-value.is-small {
+    font-size: 1rem;
+    line-height: 1.3;
 }
 
-.videos-admin-table tbody tr:hover {
-    background: rgba(47, 91, 210, .035);
+.videos-stat-label {
+    font-size: .92rem;
 }
 
-.videos-admin code {
-    font-size: .88em;
-    opacity: .8;
+.videos-stat-detail {
+    margin-top: auto;
+    padding-top: .4rem;
+    font-size: .78rem;
+    line-height: 1.3;
+    opacity: .7;
 }
 
-.videos-admin .videos-advanced-field {
-    margin-top: .8rem;
-    border-style: solid;
-    border-color: rgba(127, 127, 127, .2);
-    background: rgba(127, 127, 127, .025);
+.videos-integration-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: .75rem;
 }
 
-.videos-admin .videos-advanced-field > summary {
-    cursor: pointer;
-    font-weight: 600;
-}
-
-.videos-admin .videos-stat-card,
-.videos-admin .videos-integration-grid > div,
-.videos-admin .videos-admin-result {
-    border-color: rgba(127, 127, 127, .18) !important;
-    border-radius: .45rem !important;
-    background: rgba(127, 127, 127, .035) !important;
-    box-shadow: none !important;
-}
-
-@media (max-width: 640px) {
-    .videos-admin:not(.block-center) {
-        border-radius: .45rem;
-    }
-
-    .videos-admin:not(.block-center) > h1 {
-        padding: .9rem 1rem;
-        font-size: 1.2rem;
-    }
-
-    .videos-admin:not(.block-center) > .videos-navigation,
-    .videos-admin:not(.block-center) > .videos-admin-section,
-    .videos-admin:not(.block-center) > .videos-admin-help,
-    .videos-admin:not(.block-center) > p,
-    .videos-admin:not(.block-center) > details {
-        margin-left: .75rem;
-        margin-right: .75rem;
-    }
-}
-
-/* VIDEOS ADMIN UNIFIED UI 0.19.0 */
-.videos-admin {
-    --videos-admin-gap: 1.25rem;
-}
-
-/* Overview uses Geeklog's block shell; keep its content away from the edges. */
-.videos-admin.block-center > .block-content {
-    padding: 0 var(--videos-admin-gap) var(--videos-admin-gap);
-    box-sizing: border-box;
-}
-
-/* Actions, Statistics and Moderation use the same visual shell. */
-.videos-admin:not(.block-center) {
-    overflow: hidden;
-    border: 1px solid rgba(127, 127, 127, .22);
-    border-radius: .7rem;
-    background: rgba(255, 255, 255, .78);
-    box-shadow: 0 8px 26px rgba(20, 30, 55, .06);
-}
-
-.videos-admin:not(.block-center) > h1 {
-    margin: 0;
-    padding: 1.15rem var(--videos-admin-gap);
-    border-bottom: 1px solid rgba(127, 127, 127, .18);
-    background: rgba(70, 95, 190, .065);
-    font-size: 1.45rem;
-    line-height: 1.25;
-}
-
-.videos-admin:not(.block-center) > .videos-navigation {
-    margin: 0 0 var(--videos-admin-gap);
-    padding: 0 var(--videos-admin-gap);
-}
-
-.videos-admin:not(.block-center) > .videos-admin-section,
-.videos-admin:not(.block-center) > .videos-stat-grid,
-.videos-admin:not(.block-center) > .videos-admin-help,
-.videos-admin:not(.block-center) > .videos-admin-results,
-.videos-admin:not(.block-center) > .videos-integration-grid,
-.videos-admin:not(.block-center) > details,
-.videos-admin:not(.block-center) > form,
-.videos-admin:not(.block-center) > p {
-    margin-left: var(--videos-admin-gap);
-    margin-right: var(--videos-admin-gap);
-}
-
-.videos-admin-section,
-.videos-admin-panel {
-    border-color: rgba(127, 127, 127, .18);
-    background: rgba(127, 127, 127, .025);
-    box-shadow: none;
-}
-
-.videos-admin-section > h2,
-.videos-admin-panel-heading h2 {
-    letter-spacing: -.01em;
-}
-
-.videos-admin-form + .videos-admin-form {
-    margin-top: .85rem;
-}
-
-.videos-admin-form input[type="text"],
-.videos-admin-form input[type="password"],
-.videos-admin-form select {
-    background: rgba(255, 255, 255, .82);
-}
-
-.videos-admin-form input:focus,
-.videos-admin-form select:focus,
-.videos-admin-form button:focus,
-.videos-admin a:focus {
-    outline: 2px solid rgba(54, 89, 210, .45);
-    outline-offset: 2px;
+.videos-integration-grid > div {
+    display: flex;
+    flex-direction: column;
+    gap: .3rem;
+    padding: .85rem;
+    border: 1px solid rgba(127, 127, 127, .16);
+    border-radius: .45rem;
+    background: rgba(127, 127, 127, .035);
 }
 
 .videos-admin-table tbody tr:hover {
-    background: rgba(70, 95, 190, .045);
-}
-
-.videos-admin .videos-navigation {
-    box-sizing: border-box;
+    background: rgba(70, 95, 190, .04);
 }
 
 @media (max-width: 700px) {
     .videos-admin {
-        --videos-admin-gap: .9rem;
+        --videos-admin-gap: .85rem;
     }
 
-    .videos-admin:not(.block-center) > h1 {
-        font-size: 1.25rem;
+    .videos-admin-page-header h1 {
+        font-size: 1.15rem;
     }
 }
 

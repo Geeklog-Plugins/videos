@@ -601,6 +601,50 @@ function VIDEOS_renderNavigation($active)
     return $html . '</ul></nav>';
 }
 
+function VIDEOS_adminNavigation($active)
+{
+    global $_CONF, $LANG_VIDEOS;
+
+    $base = rtrim($_CONF['site_admin_url'], '/') . '/plugins/videos/';
+    $items = array(
+        'overview' => array('index.php', $LANG_VIDEOS['admin_nav_overview']),
+        'actions' => array('actions.php', $LANG_VIDEOS['admin_nav_actions']),
+        'stats' => array('stats.php', $LANG_VIDEOS['admin_nav_stats']),
+        'moderation' => array('moderation.php', $LANG_VIDEOS['admin_nav_moderation'])
+    );
+
+    $html = '<nav class="videos-navigation" aria-label="'
+        . htmlspecialchars($LANG_VIDEOS['admin_navigation'], ENT_QUOTES, 'UTF-8')
+        . '"><ul>';
+    foreach ($items as $key => $item) {
+        $html .= '<li><a href="'
+            . htmlspecialchars($base . $item[0], ENT_QUOTES, 'UTF-8') . '"'
+            . ($key === $active ? ' class="is-active" aria-current="page"' : '')
+            . '>' . htmlspecialchars($item[1], ENT_QUOTES, 'UTF-8') . '</a></li>';
+    }
+
+    return $html . '</ul></nav>';
+}
+
+function VIDEOS_adminPageOpen($active, $pageTitle)
+{
+    global $LANG_VIDEOS;
+
+    return '<section class="block-center videos-admin">'
+        . '<div class="block-title">'
+        . htmlspecialchars($LANG_VIDEOS['admin_title'], ENT_QUOTES, 'UTF-8')
+        . '</div><div class="block-content">'
+        . VIDEOS_adminNavigation($active)
+        . '<header class="videos-admin-page-header"><h1>'
+        . htmlspecialchars($pageTitle, ENT_QUOTES, 'UTF-8')
+        . '</h1></header>';
+}
+
+function VIDEOS_adminPageClose()
+{
+    return '</div></section>';
+}
+
 function VIDEOS_adminText($key)
 {
     global $LANG_VIDEOS_ADMIN;
