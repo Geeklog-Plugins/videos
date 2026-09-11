@@ -614,7 +614,7 @@ function VIDEOS_stylesheetLink($file)
 {
     global $_CONF;
 
-    $version = VIDEOS_PLUGIN_VERSION;
+    $version = VIDEOS_PLUGIN_VERSION . '-' . (int) @filemtime(__FILE__);
     $cssPath = '';
 
     if (!empty($_CONF['path_html'])) {
