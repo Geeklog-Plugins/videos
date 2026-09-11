@@ -2,13 +2,7 @@
 
 require_once '../../../lib-common.php';
 
-$adminHeaderCode = VIDEOS_adminHeaderCode()
-    . '<link rel="stylesheet" type="text/css" href="'
-    . htmlspecialchars(
-        $_CONF['site_url'] . '/videos/css/admin.css?v=' . VIDEOS_PLUGIN_VERSION,
-        ENT_QUOTES,
-        'UTF-8'
-    ) . '">' . "\n";
+$adminHeaderCode = VIDEOS_adminHeaderCode();
 
 if (!SEC_hasRights('videos.admin')) {
     echo COM_createHTMLDocument(
