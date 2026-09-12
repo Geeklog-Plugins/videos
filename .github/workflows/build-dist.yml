@@ -71,7 +71,25 @@ jobs:
           grep -Fq "function_exists('PLG_itemDeleted')" classes/Videos_Moderation.php
           grep -Fq "function_exists('PLG_itemDeleted')" classes/Videos_PermanentPool.php
 
-      - name: Validate admin language keys
+      - name: Normalize semantic admin language keys
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 tools/normalize-admin-language-semantic.py
+          if grep -R -nE "text_[0-9a-f]{12}|VIDEOS_adminText\(|VIDEOS_localizeAdminText\(" \
+              admin/index.php admin/actions.php admin/stats.php admin/moderation.php functions.inc; then
+            echo 'Legacy hashed admin language reference remains.' >&2
+            exit 1
+          fi
+          if grep -R -nE "LANG_VIDEOS_ADMIN(_TEXT)?|text_[0-9a-f]{12}" \
+              language/english.php language/french_france.php; then
+            echo 'Legacy hashed admin language table remains.' >&2
+            exit 1
+          fi
+          grep -Fq "\$LANG_VIDEOS['admin_" admin/actions.php
+          grep -Fq "\$LANG_VIDEOS['admin_" admin/stats.php
+
+      - name: Validate semantic admin language keys
         shell: bash
         run: |
           set -euo pipefail
@@ -79,24 +97,25 @@ jobs:
           from pathlib import Path
           import re
 
-          admin_files = [Path('admin/actions.php'), Path('admin/stats.php')]
+          admin_files = [
+              Path('admin/index.php'), Path('admin/actions.php'),
+              Path('admin/stats.php'), Path('admin/moderation.php')
+          ]
           lang_files = [Path('language/english.php'), Path('language/french_france.php')]
 
           used = set()
           for path in admin_files:
-              used.update(re.findall(r"VIDEOS_adminText\('((?:text_)[0-9a-f]{12})'\)", path.read_text(encoding='utf-8')))
-
-          if not used:
-              raise SystemExit('No admin language keys found to validate.')
+              used.update(re.findall(r"\$LANG_VIDEOS\['(admin_[A-Za-z0-9_]+)'\]", path.read_text(encoding='utf-8')))
 
           for path in lang_files:
               text = path.read_text(encoding='utf-8')
-              defined = set(re.findall(r"'((?:text_)[0-9a-f]{12})'\s*=>", text))
+              defined = set(re.findall(r"\$LANG_VIDEOS\['(admin_[A-Za-z0-9_]+)'\]\s*=", text))
+              defined.update(re.findall(r"'(admin_[A-Za-z0-9_]+)'\s*=>", text))
               missing = sorted(used - defined)
               if missing:
-                  raise SystemExit(f'{path}: missing admin keys: {", ".join(missing)}')
+                  raise SystemExit(f'{path}: missing semantic admin keys: {", ".join(missing)}')
 
-          print(f'Validated {len(used)} admin language keys in English and French.')
+          print(f'Validated {len(used)} semantic admin language keys in English and French.')
           PY
 
       - name: Lint PHP sources
@@ -136,9 +155,9 @@ jobs:
             grep -Fq 'VIDEOS_adminPageOpen(' "$file"
             grep -Fq 'VIDEOS_adminPageClose()' "$file"
           done
-          grep -Fq 'VIDEOS_adminText(' admin/index.php
-          grep -Fq 'VIDEOS_adminText(' admin/actions.php
-          grep -Fq 'VIDEOS_adminText(' admin/stats.php
+          grep -Fq '$LANG_VIDEOS[' admin/index.php
+          grep -Fq '$LANG_VIDEOS[' admin/actions.php
+          grep -Fq '$LANG_VIDEOS[' admin/stats.php
           grep -Fq '$LANG_VIDEOS[' admin/moderation.php
 
       - name: Build installable ZIP
@@ -176,8 +195,8 @@ jobs:
           unzip -p "dist/${ARCHIVE}" videos/install_updates.php | grep -Fq '$bootstrap->migrateLegacyStorage()'
           unzip -p "dist/${ARCHIVE}" videos/classes/Videos_PermanentPool.php | grep -Fq '$this->signalDeleted($videoId);'
           unzip -p "dist/${ARCHIVE}" videos/classes/Videos_Moderation.php | grep -Fq '$this->signalChannelVideos($channelId, $afterExcluded);'
-          if unzip -p "dist/${ARCHIVE}" videos/admin/actions.php | grep -Fq '{{videos_admin_'; then
-            echo 'Unresolved admin token found in archive.' >&2
+          if unzip -p "dist/${ARCHIVE}" videos/admin/actions.php | grep -Eq 'text_[0-9a-f]{12}|VIDEOS_adminText\('; then
+            echo 'Legacy admin language reference found in archive.' >&2
             exit 1
           fi
 
@@ -193,10 +212,10 @@ jobs:
             functions.inc install_updates.php \
             language/english.php language/french_france.php \
             public_html/css/admin.css \
-            tools/normalize-admin-ui.py tools/normalize-storage-upgrade.py \
+            tools/normalize-admin-ui.py tools/normalize-storage-upgrade.py tools/normalize-admin-language-semantic.py \
             dist
           if git diff --cached --quiet; then
             exit 0
           fi
-          git commit -m "Normalize Videos admin and storage archive"
+          git commit -m "Use semantic Videos admin language keys"
           git push origin "HEAD:${GITHUB_REF_NAME}"
