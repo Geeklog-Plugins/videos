@@ -49,6 +49,8 @@ require_once $_CONF['path'] . 'plugins/videos/classes/Videos_Recommendation.php'
 require_once $_CONF['path'] . 'plugins/videos/classes/Videos_Description.php';
 require_once $_CONF['path'] . 'plugins/videos/classes/Videos_Seo.php';
 require_once $_CONF['path'] . 'plugins/videos/classes/Videos_Faq.php';
+require_once $_CONF['path'] . 'plugins/videos/geeklog_integration.php';
+require_once $_CONF['path'] . 'plugins/videos/interoperability.php';
 
 $_VIDEOS_CONF = array();
 if (class_exists('config')) {
