@@ -102,16 +102,28 @@ jobs:
           grep -Fq "function_exists('PLG_itemDeleted')" classes/Videos_Moderation.php
           grep -Fq "function_exists('PLG_itemDeleted')" classes/Videos_PermanentPool.php
 
-      - name: Normalize native integrations
+      - name: Validate native integrations
         shell: bash
         run: |
           set -euo pipefail
-          python3 tools/normalize-syndication.py
           grep -Fq "plugins/videos/geeklog_integration.php" functions.inc
           grep -Fq "plugins/videos/interoperability.php" functions.inc
           grep -Fq 'function plugin_getfeednames_videos()' interoperability.php
           grep -Fq 'function plugin_getfeedcontent_videos(' interoperability.php
           grep -Fq "'config.videos.tab_seo'" autoinstall.php
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          text = Path('autoinstall.php').read_text(encoding='utf-8')
+          install = text.split('$features = array(', 1)[1].split(');', 1)[0]
+          uninstall = text.split("'features' => array(", 1)[1].split(')', 1)[0]
+          installed = set(re.findall(r"'((?:videos|config\.videos)\.[^']+)'", install))
+          removed = set(re.findall(r"'((?:videos|config\.videos)\.[^']+)'", uninstall))
+          missing = sorted(installed - removed)
+          if missing:
+              raise SystemExit('Uninstall misses features: ' + ', '.join(missing))
+          print(f'Validated uninstall symmetry for {len(installed)} features.')
+          PY
 
       - name: Lint PHP sources
         id: lint
@@ -181,15 +193,15 @@ jobs:
             exit 1
           fi
 
-      - name: Commit integration sources and archive
+      - name: Commit archive
         shell: bash
         run: |
           set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add functions.inc interoperability.php autoinstall.php tools/normalize-syndication.py dist
+          git add dist
           if git diff --cached --quiet; then
             exit 0
           fi
-          git commit -m "Complete Videos Geeklog integrations"
+          git commit -m "Rebuild Videos 0.19.0 archive"
           git push origin "HEAD:${GITHUB_REF_NAME}"
