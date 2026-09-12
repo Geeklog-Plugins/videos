@@ -14,6 +14,25 @@ SOURCE_FILES = [
 PAIR_RE = re.compile(r"'(text_[0-9a-f]{12})'\s*=>\s*('(?:\\.|[^'\\])*')")
 CALL_RE = re.compile(r"VIDEOS_adminText\('(text_[0-9a-f]{12})'\)")
 
+# Three labels were introduced directly in the unified admin shell and never
+# existed in the old hashed language table. Keep their translations explicit
+# for the one-time semantic migration instead of inventing new compatibility
+# hashes.
+EXPLICIT = {
+    'text_3b26dc5fb51b': {
+        'english.php': "'Open repair tools'",
+        'french_france.php': "'Ouvrir les outils de réparation'",
+    },
+    'text_5420b016f8dc': {
+        'english.php': "'Active'",
+        'french_france.php': "'Active'",
+    },
+    'text_563d8e12a137': {
+        'english.php': "'Videos plugin storage is unavailable. Use the repair tools.'",
+        'french_france.php': "'Le stockage du plugin Videos est indisponible. Consultez les outils de réparation.'",
+    },
+}
+
 
 def php_unquote(literal):
     value = literal[1:-1]
@@ -43,6 +62,8 @@ languages = {}
 for path in LANG_FILES:
     text = path.read_text(encoding='utf-8')
     pairs = {key: literal for key, literal in PAIR_RE.findall(text)}
+    for old_key, values in EXPLICIT.items():
+        pairs.setdefault(old_key, values[path.name])
     languages[path] = (text, pairs)
 
 english_pairs = languages[Path('language/english.php')][1]
@@ -74,7 +95,6 @@ for path in SOURCE_FILES:
 
 for path in LANG_FILES:
     text, pairs = languages[path]
-    # Remove obsolete compatibility translation structures.
     text = re.sub(
         r"\n?// 0\.18\.0 administration compatibility translations\s*\n\$LANG_VIDEOS_ADMIN_TEXT\s*=\s*array\s*\(.*?\n\);\s*",
         '\n',
@@ -111,7 +131,6 @@ text = re.sub(
 )
 functions.write_text(text, encoding='utf-8')
 
-# Hard validation: no active hashed admin language layer remains.
 for path in SOURCE_FILES + [Path('functions.inc')]:
     text = path.read_text(encoding='utf-8')
     if 'VIDEOS_adminText(' in text or 'VIDEOS_localizeAdminText(' in text or re.search(r'text_[0-9a-f]{12}', text):
