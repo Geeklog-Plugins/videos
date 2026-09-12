@@ -645,28 +645,6 @@ function VIDEOS_adminPageClose()
     return '</div></section>';
 }
 
-function VIDEOS_adminText($key)
-{
-    global $LANG_VIDEOS_ADMIN;
-
-    if (isset($LANG_VIDEOS_ADMIN) &&
-        is_array($LANG_VIDEOS_ADMIN) &&
-        isset($LANG_VIDEOS_ADMIN[$key])) {
-        return $LANG_VIDEOS_ADMIN[$key];
-    }
-
-    return (string) $key;
-}
-
-function VIDEOS_localizeAdminText($text)
-{
-    global $LANG_VIDEOS_ADMIN_TEXT;
-    if (!is_array($LANG_VIDEOS_ADMIN_TEXT) || $text === '') {
-        return $text;
-    }
-    return strtr((string) $text, $LANG_VIDEOS_ADMIN_TEXT);
-}
-
 function VIDEOS_stylesheetLink($file)
 {
     global $_CONF;

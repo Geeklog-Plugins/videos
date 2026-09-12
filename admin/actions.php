@@ -14,7 +14,7 @@ $bootstrap = new Videos_Bootstrap($_CONF);
 $message = '';
 $searchResults = array();
 if (!$bootstrap->isReady()) {
-    $message = VIDEOS_adminText('text_ad4bee7e9ff4');
+    $message = $LANG_VIDEOS['admin_videos_plugin_storage_unavailable'];
 }
 $store = $bootstrap->isReady() ? $bootstrap->getStore() : null;
 $cache = $store ? new Videos_Cache($store) : null;
@@ -29,72 +29,72 @@ $ranking = $store ? new Videos_Ranking(
 
 if ($store && $_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!SEC_checkToken()) {
-        $message = VIDEOS_adminText('text_e3a2abb1df9e');
+        $message = $LANG_VIDEOS['admin_security_token_has_expired_please_try_again'];
     } else {
         $action = isset($_POST['videos_action']) ? COM_applyFilter($_POST['videos_action']) : '';
         if ($action === 'save_key') {
             $key = isset($_POST['youtube_api_key']) ? trim((string) $_POST['youtube_api_key']) : '';
             $message = $bootstrap->setYouTubeApiKey($key)
-                ? VIDEOS_adminText('text_01bc6389bfb4')
-                : VIDEOS_adminText('text_5f254586a799');
+                ? $LANG_VIDEOS['admin_youtube_data_api_key_has_been_saved']
+                : $LANG_VIDEOS['admin_api_key_invalid'];
         } elseif ($action === 'test_search') {
             $query = isset($_POST['test_query']) ? trim(strip_tags((string) $_POST['test_query'])) : '';
             if ($query === '' || strlen($query) > 250) {
-                $message = VIDEOS_adminText('text_7f47edc0ce97');
+                $message = $LANG_VIDEOS['admin_test_query_invalid'];
             } else {
                 $searchResults = videos_actions_test_search($bootstrap, $query, $_VIDEOS_CONF);
                 $message = $searchResults === false
-                    ? videos_actions_failure_message($store, $_VIDEOS_CONF, VIDEOS_adminText('text_7b0911c5e838'))
-                    : count($searchResults['video_ids']) . VIDEOS_adminText('text_f34564089709');
+                    ? videos_actions_failure_message($store, $_VIDEOS_CONF, $LANG_VIDEOS['admin_test_search_failed'])
+                    : count($searchResults['video_ids']) . $LANG_VIDEOS['admin_valid_video_s_found'];
             }
         } elseif ($action === 'seed_discovery' && SEC_hasRights('videos.maintenance')) {
             $query = isset($_POST['seed_query']) ? trim(strip_tags((string) $_POST['seed_query'])) : '';
             if ($query === '' || strlen($query) > 250) {
-                $message = VIDEOS_adminText('text_b9af87bba9de');
+                $message = $LANG_VIDEOS['admin_seed_query_invalid'];
             } else {
                 $result = videos_actions_seed_discovery($bootstrap, $query, $_VIDEOS_CONF);
                 $message = is_array($result) && !empty($result['success'])
-                    ? (int) $result['added'] . VIDEOS_adminText('text_2486b5cd3e93')
-                    : videos_actions_failure_message($store, $_VIDEOS_CONF, VIDEOS_adminText('text_bed0f10568ed'));
+                    ? (int) $result['added'] . $LANG_VIDEOS['admin_video_s_added_reservoir']
+                    : videos_actions_failure_message($store, $_VIDEOS_CONF, $LANG_VIDEOS['admin_reservoir_seeding_failed']);
             }
         } elseif ($action === 'clear_cache' && SEC_hasRights('videos.maintenance')) {
             $scope = isset($_POST['cache_scope']) ? COM_applyFilter($_POST['cache_scope']) : '';
             $result = (new Videos_CacheMaintenance($store))->clear($scope);
             $message = !empty($result['success'])
-                ? (int) $result['deleted'] . VIDEOS_adminText('text_3e3769ea8e57')
-                : VIDEOS_adminText('text_0ff52fd5762a') . (int) $result['deleted'] . VIDEOS_adminText('text_6c77e30d5f18')
-                    . (int) $result['failed'] . VIDEOS_adminText('text_935b440d1a9c');
+                ? (int) $result['deleted'] . $LANG_VIDEOS['admin_cache_entrie_s_deleted']
+                : $LANG_VIDEOS['admin_partial_cleanup'] . (int) $result['deleted'] . $LANG_VIDEOS['admin_deleted']
+                    . (int) $result['failed'] . $LANG_VIDEOS['admin_failure_s'];
         } elseif ($action === 'rebuild_ranking' && SEC_hasRights('videos.maintenance')) {
             $count = $ranking->rebuild();
             $message = $count === false
-                ? VIDEOS_adminText('text_3b343dfb9214')
-                : VIDEOS_adminText('text_c8e38f9b9716') . (int) $count . VIDEOS_adminText('text_e0a70ebd0d32');
+                ? $LANG_VIDEOS['admin_ranking_rebuild_failed']
+                : $LANG_VIDEOS['admin_rankings_rebuilt'] . (int) $count . $LANG_VIDEOS['admin_ranked_video_s'];
         } elseif ($action === 'pool_rebuild' && SEC_hasRights('videos.maintenance')) {
             $result = $pool->synchronize($ranking->getGlobal(500), $_VIDEOS_CONF, true);
             $message = $result === false
-                ? VIDEOS_adminText('text_cc6acc866d8d')
-                : VIDEOS_adminText('text_fb0584cd8c48');
+                ? $LANG_VIDEOS['admin_permanent_catalogue_rebuild_failed']
+                : $LANG_VIDEOS['admin_permanent_catalogue_has_been_rebuilt'];
         } elseif ($action === 'add_video') {
             $input = isset($_POST['video_input']) ? trim((string) $_POST['video_input']) : '';
             $videoId = videos_admin_extract_video_id($input);
             if ($videoId === '') {
-                $message = VIDEOS_adminText('text_82147ba36284');
+                $message = $LANG_VIDEOS['admin_invalid_youtube_id_url'];
             } else {
                 $video = $cache->getVideo($videoId, true);
                 if (!is_array($video)) {
                     $video = videos_admin_fetch_single_video($bootstrap, $cache, $videoId, $_VIDEOS_CONF);
                 }
                 if (!is_array($video)) {
-                    $message = VIDEOS_adminText('text_77f7f85bea7d');
+                    $message = $LANG_VIDEOS['admin_video_unavailable_private_not_embeddable_rejected_by'];
                 } elseif ($moderation->isVideoBlocked($videoId)) {
-                    $message = VIDEOS_adminText('text_6b92eea0db9c');
+                    $message = $LANG_VIDEOS['admin_video_currently_blocked_by_moderation'];
                 } else {
                     $global = $ranking->getGlobal(500);
                     $rankingItem = isset($global[$videoId]) ? $global[$videoId] : array();
                     $saved = $pool->setManualState($videoId, 'added', $rankingItem);
                     $message = $saved
-                        ? VIDEOS_adminText('text_1b98ef900ab7')
-                        : VIDEOS_adminText('text_d51726c9d960');
+                        ? $LANG_VIDEOS['admin_video_added_permanent_catalogue']
+                        : $LANG_VIDEOS['admin_unable_add_video_permanent_catalogue'];
                 }
             }
         } elseif (in_array(
@@ -114,8 +114,8 @@ if ($store && $_SERVER['REQUEST_METHOD'] === 'POST') {
             $global = $ranking->getGlobal(500);
             $rankingItem = isset($global[$videoId]) ? $global[$videoId] : array();
             $message = $pool->setManualState($videoId, $stateMap[$action], $rankingItem)
-                ? VIDEOS_adminText('text_094f5ad0c0fe')
-                : VIDEOS_adminText('text_fa630f6fba54');
+                ? $LANG_VIDEOS['admin_editorial_decision_saved']
+                : $LANG_VIDEOS['admin_unable_save_decision'];
         } elseif ($action === 'signal_public_pages') {
             $urls = videos_admin_public_urls(
                 $store,
@@ -126,17 +126,17 @@ if ($store && $_SERVER['REQUEST_METHOD'] === 'POST') {
                 $_VIDEOS_CONF
             );
             if (count($urls) === 0) {
-                $message = VIDEOS_adminText('text_974483b3c0bd');
+                $message = $LANG_VIDEOS['admin_no_public_videos_url_submit'];
             } elseif (function_exists('send_to_indexnow')) {
                 $result = send_to_indexnow(
                     $urls,
                     array('item_type' => 'videos', 'event' => 'manual-sync')
                 );
                 $message = $result === false
-                    ? VIDEOS_adminText('text_f9f0422359a1')
-                    : count($urls) . VIDEOS_adminText('text_66d82f59b38e');
+                    ? $LANG_VIDEOS['admin_indexnow_batch_could_not_be_sent']
+                    : count($urls) . $LANG_VIDEOS['admin_videos_url_s_sent_indexnow_one_batch'];
             } else {
-                $message = VIDEOS_adminText('text_bf4753222ec0');
+                $message = $LANG_VIDEOS['admin_indexnow_plugin_unavailable_no_fake_content_creation'];
             }
         }
     }
@@ -147,27 +147,26 @@ $records = $pool ? $pool->records() : array('items' => array(), 'excluded' => ar
 
 $html = VIDEOS_adminPageOpen('actions', $LANG_VIDEOS['admin_nav_actions']);
 if ($message !== '') {
-    $message = VIDEOS_localizeAdminText($message);
-    if ($message === VIDEOS_adminText('text_1b98ef900ab7')) {
+    if ($message === $LANG_VIDEOS['admin_video_added_permanent_catalogue']) {
         $html .= '<p class="videos-admin-help"><strong>'
             . htmlspecialchars($message, ENT_QUOTES, 'UTF-8') . '</strong></p>';
     } else {
         $html .= COM_showMessageText($message, '', true);
     }
 }
-$html .= '<section class="videos-admin-section"><h2>' . VIDEOS_adminText('text_12cb48a2ffe8') . '</h2>'
-    . '<p>' . VIDEOS_adminText('text_e4a4d74ceeba') . '</p>'
+$html .= '<section class="videos-admin-section"><h2>' . $LANG_VIDEOS['admin_video_curation'] . '</h2>'
+    . '<p>' . $LANG_VIDEOS['admin_add_video_directly_by_its_youtube_id'] . '</p>'
     . '<form class="videos-admin-form" method="post"><input type="hidden" name="videos_action" value="add_video">'
     . '<input type="hidden" name="' . CSRF_TOKEN . '" value="' . htmlspecialchars($token, ENT_QUOTES, 'UTF-8') . '">'
-    . '<label>' . VIDEOS_adminText('text_349916d37ddb') . ' <input type="text" name="video_input" maxlength="500" size="60" placeholder="H5nzrlARuCo' . VIDEOS_adminText('text_2dcd74f139c2') . '" required></label> '
-    . '<button type="submit">' . VIDEOS_adminText('text_20c9e4289922') . '</button></form></section>';
+    . '<label>' . $LANG_VIDEOS['admin_youtube_id_url'] . ' <input type="text" name="video_input" maxlength="500" size="60" placeholder="H5nzrlARuCo' . $LANG_VIDEOS['admin_https_youtu_be'] . '" required></label> '
+    . '<button type="submit">' . $LANG_VIDEOS['admin_add_permanent_catalogue'] . '</button></form></section>';
 
-$html .= '<section class="videos-admin-section"><h2>' . VIDEOS_adminText('text_3696c9b66256') . '</h2>';
+$html .= '<section class="videos-admin-section"><h2>' . $LANG_VIDEOS['admin_permanent_catalogue'] . '</h2>';
 if (empty($records['items'])) {
-    $html .= '<p>' . VIDEOS_adminText('text_d0d466d799cb') . '</p>';
+    $html .= '<p>' . $LANG_VIDEOS['admin_no_retained_video'] . '</p>';
 } else {
     $html .= '<div class="videos-admin-table-wrap"><table class="admin-list videos-admin-table"><thead><tr>'
-        . '<th>' . VIDEOS_adminText('text_304f6ca42f36') . '</th><th>' . VIDEOS_adminText('text_d3b28a2adb27') . '</th><th>' . $LANG_VIDEOS['admin_actions_column'] . '</th></tr></thead><tbody>';
+        . '<th>' . $LANG_VIDEOS['admin_video'] . '</th><th>' . $LANG_VIDEOS['admin_status_db27'] . '</th><th>' . $LANG_VIDEOS['admin_actions_column'] . '</th></tr></thead><tbody>';
     foreach ($records['items'] as $videoId => $item) {
         $video = $cache->getVideo($videoId, true);
         $title = is_array($video) && !empty($video['snippet']['title'])
@@ -176,48 +175,48 @@ if (empty($records['items'])) {
         $html .= '<tr><td><a href="' . htmlspecialchars(plugin_idtourl_videos('', $videoId), ENT_QUOTES, 'UTF-8') . '">'
             . htmlspecialchars($title, ENT_QUOTES, 'UTF-8') . '</a><br><code>'
             . htmlspecialchars($videoId, ENT_QUOTES, 'UTF-8') . '</code></td><td>'
-            . ($isPinned ? VIDEOS_adminText('text_12bd8de0f11f') : VIDEOS_adminText('text_4bc9bbe28d82')) . '</td><td>';
+            . ($isPinned ? $LANG_VIDEOS['admin_pinned'] : $LANG_VIDEOS['admin_permanent']) . '</td><td>';
         $html .= $isPinned
-            ? videos_admin_action_form('pool_unpin', $videoId, VIDEOS_adminText('text_6c1f6aad64af'), $token)
-            : videos_admin_action_form('pool_pin', $videoId, VIDEOS_adminText('text_9f4045dd74f4'), $token);
-        $html .= videos_admin_action_form('pool_remove', $videoId, VIDEOS_adminText('text_ddcf6449d058'), $token)
-            . videos_admin_action_form('pool_exclude', $videoId, VIDEOS_adminText('text_6ce15f0ae2c2'), $token)
+            ? videos_admin_action_form('pool_unpin', $videoId, $LANG_VIDEOS['admin_unpin'], $token)
+            : videos_admin_action_form('pool_pin', $videoId, $LANG_VIDEOS['admin_pin'], $token);
+        $html .= videos_admin_action_form('pool_remove', $videoId, $LANG_VIDEOS['admin_remove_from_selection'], $token)
+            . videos_admin_action_form('pool_exclude', $videoId, $LANG_VIDEOS['admin_exclude_from_future_selections'], $token)
             . '</td></tr>';
     }
     $html .= '</tbody></table></div>'
-        . '<p class="videos-admin-help"><strong>' . VIDEOS_adminText('text_ddcf6449d058') . '</strong> ' . $LANG_VIDEOS['admin_remove_help'] . ' '
-        . '<strong>' . VIDEOS_adminText('text_6ce15f0ae2c2') . '</strong> ' . $LANG_VIDEOS['admin_exclude_help'] . '</p>';
+        . '<p class="videos-admin-help"><strong>' . $LANG_VIDEOS['admin_remove_from_selection'] . '</strong> ' . $LANG_VIDEOS['admin_remove_help'] . ' '
+        . '<strong>' . $LANG_VIDEOS['admin_exclude_from_future_selections'] . '</strong> ' . $LANG_VIDEOS['admin_exclude_help'] . '</p>';
 }
 if (!empty($records['excluded'])) {
-    $html .= '<details class="videos-advanced-field"><summary>' . VIDEOS_adminText('text_5076293e41de') . ' ('
+    $html .= '<details class="videos-advanced-field"><summary>' . $LANG_VIDEOS['admin_videos_excluded_from_pool'] . ' ('
         . count($records['excluded']) . ')</summary><ul>';
     foreach ($records['excluded'] as $videoId => $excludedAt) {
         $html .= '<li><code>' . htmlspecialchars($videoId, ENT_QUOTES, 'UTF-8') . '</code> '
-            . videos_admin_action_form('pool_allow', $videoId, VIDEOS_adminText('text_a38b9729e18c'), $token) . '</li>';
+            . videos_admin_action_form('pool_allow', $videoId, $LANG_VIDEOS['admin_allow_again'], $token) . '</li>';
     }
     $html .= '</ul></details>';
 }
 if (SEC_hasRights('videos.maintenance')) {
     $html .= '<form class="videos-admin-form" method="post"><input type="hidden" name="videos_action" value="pool_rebuild">'
         . '<input type="hidden" name="' . CSRF_TOKEN . '" value="' . htmlspecialchars($token, ENT_QUOTES, 'UTF-8') . '">'
-        . '<button type="submit">' . VIDEOS_adminText('text_914c6f2a00bd') . '</button></form>';
+        . '<button type="submit">' . $LANG_VIDEOS['admin_rebuild_permanent_catalogue'] . '</button></form>';
 }
 $html .= '</section>';
 
 $youtubeApiKeyConfigured = $bootstrap->getYouTubeApiKey() !== '';
 $html .= '<section class="videos-admin-section"><h2>YouTube Data API</h2>'
-    . '<p><strong>' . VIDEOS_adminText('text_724ddfa407d2') . '</strong> ' . ($youtubeApiKeyConfigured ? VIDEOS_adminText('text_cfb801cd863c') : VIDEOS_adminText('text_a41badeb3bf5')) . '</p>';
+    . '<p><strong>' . $LANG_VIDEOS['admin_status'] . '</strong> ' . ($youtubeApiKeyConfigured ? $LANG_VIDEOS['admin_api_key_configured'] : $LANG_VIDEOS['admin_api_key_missing']) . '</p>';
 if (!$youtubeApiKeyConfigured) {
-    $html .= '<p>' . VIDEOS_adminText('text_4ca61851cb1a') . '</p>';
+    $html .= '<p>' . $LANG_VIDEOS['admin_youtube_data_api_key_required_search_new'] . '</p>';
 }
 $html .= '<form class="videos-admin-form" method="post"><input type="hidden" name="videos_action" value="save_key">'
     . '<input type="hidden" name="' . CSRF_TOKEN . '" value="' . htmlspecialchars($token, ENT_QUOTES, 'UTF-8') . '">'
-    . '<label>' . ($youtubeApiKeyConfigured ? VIDEOS_adminText('text_7a468e16ab17') : VIDEOS_adminText('text_a05995d3d967')) . ' <input type="password" name="youtube_api_key" maxlength="200" autocomplete="new-password"></label> '
-    . '<button type="submit">' . ($youtubeApiKeyConfigured ? VIDEOS_adminText('text_a6c9feab7f6b') : VIDEOS_adminText('text_e4d5d3b1e0c6')) . '</button></form>'
+    . '<label>' . ($youtubeApiKeyConfigured ? $LANG_VIDEOS['admin_replace_api_key'] : $LANG_VIDEOS['admin_add_api_key']) . ' <input type="password" name="youtube_api_key" maxlength="200" autocomplete="new-password"></label> '
+    . '<button type="submit">' . ($youtubeApiKeyConfigured ? $LANG_VIDEOS['admin_replace_key'] : $LANG_VIDEOS['admin_save_key']) . '</button></form>'
     . '<form class="videos-admin-form" method="post"><input type="hidden" name="videos_action" value="test_search">'
     . '<input type="hidden" name="' . CSRF_TOKEN . '" value="' . htmlspecialchars($token, ENT_QUOTES, 'UTF-8') . '">'
-    . '<label>' . VIDEOS_adminText('text_39b35ebcf325') . ' <input type="text" name="test_query" maxlength="250" size="50" required></label> '
-    . '<button type="submit">' . VIDEOS_adminText('text_559548968cfd') . '</button></form>';
+    . '<label>' . $LANG_VIDEOS['admin_test_search'] . ' <input type="text" name="test_query" maxlength="250" size="50" required></label> '
+    . '<button type="submit">' . $LANG_VIDEOS['admin_test_search_8cfd'] . '</button></form>';
 if (is_array($searchResults) && !empty($searchResults['videos'])) {
     $html .= '<div class="videos-grid videos-admin-results">';
     foreach ($searchResults['videos'] as $videoId => $video) {
@@ -231,30 +230,30 @@ if (is_array($searchResults) && !empty($searchResults['videos'])) {
 if (SEC_hasRights('videos.maintenance')) {
     $html .= '<form class="videos-admin-form" method="post"><input type="hidden" name="videos_action" value="seed_discovery">'
         . '<input type="hidden" name="' . CSRF_TOKEN . '" value="' . htmlspecialchars($token, ENT_QUOTES, 'UTF-8') . '">'
-        . '<label>' . VIDEOS_adminText('text_5d8652cbb6d4') . ' <input type="text" name="seed_query" maxlength="250" size="50" required></label> '
-        . '<button type="submit">' . VIDEOS_adminText('text_3b5c2464103e') . '</button></form>';
+        . '<label>' . $LANG_VIDEOS['admin_seed_query'] . ' <input type="text" name="seed_query" maxlength="250" size="50" required></label> '
+        . '<button type="submit">' . $LANG_VIDEOS['admin_seed_reservoir'] . '</button></form>';
 }
 $html .= '</section>';
 
 if (SEC_hasRights('videos.maintenance')) {
-    $html .= '<section class="videos-admin-section"><h2>' . VIDEOS_adminText('text_94de303bbef8') . '</h2>'
+    $html .= '<section class="videos-admin-section"><h2>' . $LANG_VIDEOS['admin_maintenance'] . '</h2>'
         . '<form class="videos-admin-form" method="post"><input type="hidden" name="videos_action" value="rebuild_ranking">'
         . '<input type="hidden" name="' . CSRF_TOKEN . '" value="' . htmlspecialchars($token, ENT_QUOTES, 'UTF-8') . '">'
-        . '<button type="submit">' . VIDEOS_adminText('text_50cc32da6a35') . '</button></form>'
+        . '<button type="submit">' . $LANG_VIDEOS['admin_rebuild_rankings'] . '</button></form>'
         . '<form class="videos-admin-form" method="post"><input type="hidden" name="videos_action" value="clear_cache">'
         . '<input type="hidden" name="' . CSRF_TOKEN . '" value="' . htmlspecialchars($token, ENT_QUOTES, 'UTF-8') . '">'
-        . '<label>' . $LANG_VIDEOS['admin_cache_label'] . ' <select name="cache_scope"><option value="search">' . VIDEOS_adminText('text_7e62fa37e865') . '</option><option value="videos">' . VIDEOS_adminText('text_ea129238fc57') . '</option>'
-        . '<option value="channels">' . VIDEOS_adminText('text_88ef0e8638cb') . '</option><option value="availability">' . VIDEOS_adminText('text_0f06e60ae162') . '</option><option value="all">' . VIDEOS_adminText('text_b97ae3b4f909') . '</option></select></label> '
-        . '<button type="submit">' . VIDEOS_adminText('text_daf08703c1e1') . '</button></form>'
-        . '<p><a href="' . htmlspecialchars($_CONF['site_admin_url'] . '/plugins/videos/repair.php', ENT_QUOTES, 'UTF-8') . '">' . VIDEOS_adminText('text_c756339c6ce3') . '</a></p></section>';
+        . '<label>' . $LANG_VIDEOS['admin_cache_label'] . ' <select name="cache_scope"><option value="search">' . $LANG_VIDEOS['admin_searches'] . '</option><option value="videos">' . $LANG_VIDEOS['admin_videos'] . '</option>'
+        . '<option value="channels">' . $LANG_VIDEOS['admin_channels'] . '</option><option value="availability">' . $LANG_VIDEOS['admin_availability'] . '</option><option value="all">' . $LANG_VIDEOS['admin_all'] . '</option></select></label> '
+        . '<button type="submit">' . $LANG_VIDEOS['admin_clear_cache'] . '</button></form>'
+        . '<p><a href="' . htmlspecialchars($_CONF['site_admin_url'] . '/plugins/videos/repair.php', ENT_QUOTES, 'UTF-8') . '">' . $LANG_VIDEOS['admin_repair_tools'] . '</a></p></section>';
 }
 
 if (function_exists('send_to_indexnow')) {
-    $html .= '<section class="videos-admin-section"><h2>' . VIDEOS_adminText('text_383ccd02e996') . '</h2>'
-        . '<p>' . VIDEOS_adminText('text_7f66e4e9d432') . '</p>'
+    $html .= '<section class="videos-admin-section"><h2>' . $LANG_VIDEOS['admin_index_existing_pages'] . '</h2>'
+        . '<p>' . $LANG_VIDEOS['admin_catch_up_process_inventories_public_pages_sends'] . '</p>'
         . '<form method="post"><input type="hidden" name="videos_action" value="signal_public_pages">'
         . '<input type="hidden" name="' . CSRF_TOKEN . '" value="' . htmlspecialchars($token, ENT_QUOTES, 'UTF-8') . '">'
-        . '<button type="submit">' . VIDEOS_adminText('text_1167f948e9e0') . '</button></form></section>';
+        . '<button type="submit">' . $LANG_VIDEOS['admin_send_existing_pages_indexnow'] . '</button></form></section>';
 }
 $html .= VIDEOS_adminPageClose();
 
@@ -273,17 +272,17 @@ function videos_actions_failure_message($store, $configuration, $prefix)
         ? max(0, (int) $configuration['youtube_daily_search_limit']) : 20;
     if (!empty($data['suspended'])) {
         $code = !empty($data['last_error']['code']) ? (string) $data['last_error']['code'] : 'quota';
-        return $prefix . ' ' . VIDEOS_adminText('text_2663d0921433') . $code . ').';
+        return $prefix . ' ' . $LANG_VIDEOS['admin_youtube_quota_suspended'] . $code . ').';
     }
     if ($limit > 0 && $count >= $limit) {
-        return $prefix . ' ' . VIDEOS_adminText('text_4c9ee5b96b2f')
-            . $count . '/' . $limit . VIDEOS_adminText('text_e112686715a8');
+        return $prefix . ' ' . $LANG_VIDEOS['admin_local_youtube_search_limit_has_been_reached']
+            . $count . '/' . $limit . $LANG_VIDEOS['admin_today'];
     }
     if (!empty($data['last_error']['code'])) {
-        return $prefix . ' ' . VIDEOS_adminText('text_3d0c6584d55c') . (string) $data['last_error']['code']
-            . '. ' . $LANG_VIDEOS['admin_consult'] . ' ' . VIDEOS_adminText('text_fdce305a50b3') . ' > ' . VIDEOS_adminText('text_65748d98f850') . '.';
+        return $prefix . ' ' . $LANG_VIDEOS['admin_last_youtube_error'] . (string) $data['last_error']['code']
+            . '. ' . $LANG_VIDEOS['admin_consult'] . ' ' . $LANG_VIDEOS['admin_statistics'] . ' > ' . $LANG_VIDEOS['admin_youtube_api_activity'] . '.';
     }
-    return $prefix . ' ' . VIDEOS_adminText('text_ed0d19fdd3ad');
+    return $prefix . ' ' . $LANG_VIDEOS['admin_see_statistics_youtube_api_activity_diagnostics'];
 }
 
 function videos_actions_test_search($bootstrap, $query, $configuration)
