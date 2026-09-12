@@ -47,6 +47,20 @@ jobs:
             exit 1
           fi
 
+      - name: Normalize storage upgrade
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 tools/normalize-storage-upgrade.py
+          grep -Fq 'public function migrateLegacyStorage()' classes/Videos_Bootstrap.php
+          grep -Fq 'private function selectRuntimeRoot(' classes/Videos_Bootstrap.php
+          grep -Fq '$bootstrap->migrateLegacyStorage()' install_updates.php
+          grep -Fq 'Legacy data was preserved.' install_updates.php
+          if grep -Fq '$this->migrateLegacyData($this->legacyDataRoot' classes/Videos_Bootstrap.php; then
+            echo 'Runtime bootstrap still performs implicit storage migration.' >&2
+            exit 1
+          fi
+
       - name: Validate admin language keys
         shell: bash
         run: |
@@ -148,6 +162,8 @@ jobs:
           unzip -t "dist/${ARCHIVE}"
           unzip -p "dist/${ARCHIVE}" videos/functions.inc | grep -Fq 'function VIDEOS_adminPageOpen'
           unzip -p "dist/${ARCHIVE}" videos/public_html/css/admin.css | grep -Fq 'VIDEOS ADMIN UNIFIED UI 0.19.0'
+          unzip -p "dist/${ARCHIVE}" videos/classes/Videos_Bootstrap.php | grep -Fq 'public function migrateLegacyStorage()'
+          unzip -p "dist/${ARCHIVE}" videos/install_updates.php | grep -Fq '$bootstrap->migrateLegacyStorage()'
           if unzip -p "dist/${ARCHIVE}" videos/admin/actions.php | grep -Fq '{{videos_admin_'; then
             echo 'Unresolved admin token found in archive.' >&2
             exit 1
@@ -161,13 +177,14 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add \
             admin/index.php admin/actions.php admin/stats.php admin/moderation.php \
-            functions.inc \
+            classes/Videos_Bootstrap.php \
+            functions.inc install_updates.php \
             language/english.php language/french_france.php \
             public_html/css/admin.css \
-            tools/normalize-admin-ui.py \
+            tools/normalize-admin-ui.py tools/normalize-storage-upgrade.py \
             dist
           if git diff --cached --quiet; then
             exit 0
           fi
-          git commit -m "Normalize Videos admin interface"
+          git commit -m "Normalize Videos admin and storage upgrade"
           git push origin "HEAD:${GITHUB_REF_NAME}"
