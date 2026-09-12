@@ -31,13 +31,11 @@ jobs:
           grep -Fq 'function VIDEOS_adminPageOpen($active, $pageTitle)' functions.inc
           grep -Fq 'function VIDEOS_adminPageClose()' functions.inc
           grep -Fq 'VIDEOS ADMIN UNIFIED UI 0.19.0' public_html/css/admin.css
-
           for file in admin/index.php admin/actions.php admin/stats.php admin/moderation.php; do
             grep -Fq 'VIDEOS_adminPageOpen(' "$file"
             grep -Fq 'VIDEOS_adminPageClose()' "$file"
             grep -Fq '$LANG_VIDEOS[' "$file"
           done
-
           if grep -R -nF '{{videos_admin_' admin; then
             echo 'Unresolved Videos admin language token found.' >&2
             exit 1
@@ -64,20 +62,13 @@ jobs:
           python3 - <<'PY'
           from pathlib import Path
           import re
-
-          admin_files = [
-              Path('admin/index.php'), Path('admin/actions.php'),
-              Path('admin/stats.php'), Path('admin/moderation.php')
-          ]
+          admin_files = [Path('admin/index.php'), Path('admin/actions.php'), Path('admin/stats.php'), Path('admin/moderation.php')]
           lang_files = [Path('language/english.php'), Path('language/french_france.php')]
-
           used = set()
           for path in admin_files:
               used.update(re.findall(r"\$LANG_VIDEOS\['(admin_[A-Za-z0-9_]+)'\]", path.read_text(encoding='utf-8')))
-
           if not used:
               raise SystemExit('No semantic admin language keys found.')
-
           for path in lang_files:
               text = path.read_text(encoding='utf-8')
               defined = set(re.findall(r"\$LANG_VIDEOS\['(admin_[A-Za-z0-9_]+)'\]\s*=", text))
@@ -85,7 +76,6 @@ jobs:
               missing = sorted(used - defined)
               if missing:
                   raise SystemExit(f'{path}: missing semantic admin keys: {", ".join(missing)}')
-
           print(f'Validated {len(used)} semantic admin language keys in English and French.')
           PY
 
@@ -111,6 +101,17 @@ jobs:
           grep -Fq '$this->signalChannelVideos($channelId, $afterExcluded);' classes/Videos_Moderation.php
           grep -Fq "function_exists('PLG_itemDeleted')" classes/Videos_Moderation.php
           grep -Fq "function_exists('PLG_itemDeleted')" classes/Videos_PermanentPool.php
+
+      - name: Normalize native integrations
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 tools/normalize-syndication.py
+          grep -Fq "plugins/videos/geeklog_integration.php" functions.inc
+          grep -Fq "plugins/videos/interoperability.php" functions.inc
+          grep -Fq 'function plugin_getfeednames_videos()' interoperability.php
+          grep -Fq 'function plugin_getfeedcontent_videos(' interoperability.php
+          grep -Fq "'config.videos.tab_seo'" autoinstall.php
 
       - name: Lint PHP sources
         id: lint
@@ -171,24 +172,24 @@ jobs:
           cd ..
           unzip -t "dist/${ARCHIVE}"
           unzip -p "dist/${ARCHIVE}" videos/functions.inc | grep -Fq 'function VIDEOS_adminPageOpen'
-          unzip -p "dist/${ARCHIVE}" videos/public_html/css/admin.css | grep -Fq 'VIDEOS ADMIN UNIFIED UI 0.19.0'
-          unzip -p "dist/${ARCHIVE}" videos/classes/Videos_Bootstrap.php | grep -Fq 'public function migrateLegacyStorage()'
-          unzip -p "dist/${ARCHIVE}" videos/install_updates.php | grep -Fq '$bootstrap->migrateLegacyStorage()'
-          unzip -p "dist/${ARCHIVE}" videos/classes/Videos_PermanentPool.php | grep -Fq '$this->signalDeleted($videoId);'
+          unzip -p "dist/${ARCHIVE}" videos/functions.inc | grep -Fq 'plugins/videos/interoperability.php'
+          unzip -p "dist/${ARCHIVE}" videos/interoperability.php | grep -Fq 'function plugin_getfeednames_videos()'
+          unzip -p "dist/${ARCHIVE}" videos/interoperability.php | grep -Fq 'function plugin_getfeedcontent_videos('
+          unzip -p "dist/${ARCHIVE}" videos/autoinstall.php | grep -Fq "'config.videos.tab_seo'"
           if unzip -p "dist/${ARCHIVE}" videos/admin/actions.php | grep -Eq 'text_[0-9a-f]{12}|VIDEOS_adminText\('; then
             echo 'Legacy admin language reference found in archive.' >&2
             exit 1
           fi
 
-      - name: Commit archive
+      - name: Commit integration sources and archive
         shell: bash
         run: |
           set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add dist
+          git add functions.inc interoperability.php autoinstall.php tools/normalize-syndication.py dist
           if git diff --cached --quiet; then
             exit 0
           fi
-          git commit -m "Rebuild Videos 0.19.0 archive"
+          git commit -m "Complete Videos Geeklog integrations"
           git push origin "HEAD:${GITHUB_REF_NAME}"
