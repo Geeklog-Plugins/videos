@@ -57,17 +57,17 @@ def strip_legacy_tables(text):
     lines = text.splitlines(True)
     out = []
     skipping = False
-    depth = 0
     for line in lines:
         if not skipping and re.search(r'^\s*\$LANG_VIDEOS_ADMIN(?:_TEXT)?\s*=', line):
             skipping = True
-            depth = line.count('(') - line.count(')')
-            if depth <= 0 and ';' in line:
+            # Handle compact single-line assignments too.
+            if re.search(r'\)\)??\s*;\s*$', line):
                 skipping = False
             continue
         if skipping:
-            depth += line.count('(') - line.count(')')
-            if depth <= 0 and ';' in line:
+            # Old tables end on either ");" or "));". Do not count
+            # parentheses because translated strings may contain them.
+            if re.match(r'^\s*\)\)?\s*;\s*$', line):
                 skipping = False
             continue
         if re.match(r'^\s*//\s*(?:0\.18\.0 administration compatibility translations|VIDEOS ADMIN .*KEYS 0\.19\.0|END VIDEOS ADMIN .*KEYS 0\.19\.0)\s*$', line):
