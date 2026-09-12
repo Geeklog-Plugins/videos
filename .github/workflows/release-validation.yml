@@ -53,6 +53,52 @@ jobs:
       - name: Test explicit storage migration
         run: php tools/test-storage-migration.php
 
+  geeklog-core-contracts:
+    name: Geeklog ${{ matrix.label }} core API contracts
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - label: '2.1.1'
+            ref: geeklog_2_1_1_stable
+          - label: '2.2.2'
+            ref: v2.2.2
+
+    steps:
+      - name: Check out Videos source
+        uses: actions/checkout@v5
+
+      - name: Check out Geeklog Core ${{ matrix.label }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          git clone --depth 1 --branch '${{ matrix.ref }}' \
+            https://github.com/Geeklog-Core/geeklog.git geeklog-core
+
+      - name: Validate required Core Plugin APIs
+        shell: bash
+        run: |
+          set -euo pipefail
+          core='geeklog-core/system/lib-plugins.php'
+          grep -Fq 'function PLG_getFeedNames(' "$core"
+          grep -Fq 'function PLG_getFeedContent(' "$core"
+          grep -Fq 'function PLG_getItemInfo(' "$core"
+          grep -Fq 'function PLG_itemSaved(' "$core"
+          grep -Fq 'function PLG_itemDeleted(' "$core"
+          grep -Fq 'function PLG_collectTags(' "$core"
+
+      - name: Validate Videos callbacks match Core discovery conventions
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -Fq 'function plugin_getfeednames_videos()' interoperability.php
+          grep -Fq 'function plugin_getfeedcontent_videos(' interoperability.php
+          grep -Fq 'function plugin_getiteminfo_videos(' interoperability.php
+          grep -Fq 'function plugin_autotags_videos(' interoperability.php
+          grep -Fq 'function plugin_searchtypes_videos()' geeklog_integration.php
+          grep -Fq 'function plugin_dopluginsearch_videos(' geeklog_integration.php
+
   plugin-contracts:
     name: Geeklog integration contracts
     runs-on: ubuntu-latest
