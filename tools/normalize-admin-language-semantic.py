@@ -54,26 +54,25 @@ def semantic_name(text, fallback, used):
 
 
 def strip_legacy_tables(text):
-    lines = text.splitlines(True)
-    out = []
-    skipping = False
-    for line in lines:
-        if not skipping and re.search(r'^\s*\$LANG_VIDEOS_ADMIN(?:_TEXT)?\s*=', line):
-            skipping = True
-            # Handle compact single-line assignments too.
-            if re.search(r'\)\)??\s*;\s*$', line):
-                skipping = False
-            continue
-        if skipping:
-            # Old tables end on either ");" or "));". Do not count
-            # parentheses because translated strings may contain them.
-            if re.match(r'^\s*\)\)?\s*;\s*$', line):
-                skipping = False
-            continue
-        if re.match(r'^\s*//\s*(?:0\.18\.0 administration compatibility translations|VIDEOS ADMIN .*KEYS 0\.19\.0|END VIDEOS ADMIN .*KEYS 0\.19\.0)\s*$', line):
-            continue
-        out.append(line)
-    return ''.join(out)
+    # These legacy tables were generated in named sections. Remove complete
+    # sections rather than attempting to parse translated PHP string content.
+    text = re.sub(
+        r'\n?// 0\.18\.0 administration compatibility translations\s*\n.*?(?=\n// VIDEOS ADMIN LANGUAGE KEYS 0\.19\.0)',
+        '\n', text, flags=re.S
+    )
+    text = re.sub(
+        r'\n?// VIDEOS ADMIN LANGUAGE KEYS 0\.19\.0\s*\n.*?// END VIDEOS ADMIN LANGUAGE KEYS 0\.19\.0\s*',
+        '\n', text, flags=re.S
+    )
+    text = re.sub(
+        r'\n?// VIDEOS ADMIN FINAL KEYS 0\.19\.0\s*\n.*?// END VIDEOS ADMIN FINAL KEYS 0\.19\.0\s*',
+        '\n', text, flags=re.S
+    )
+    text = re.sub(
+        r'\n?// VIDEOS ADMIN COMPAT KEYS 0\.19\.0\s*\n.*?// END VIDEOS ADMIN COMPAT KEYS 0\.19\.0\s*',
+        '\n', text, flags=re.S
+    )
+    return text
 
 
 languages = {}
