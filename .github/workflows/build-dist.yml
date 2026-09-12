@@ -61,11 +61,10 @@ jobs:
             exit 1
           fi
 
-      - name: Normalize lifecycle events
+      - name: Validate lifecycle events
         shell: bash
         run: |
           set -euo pipefail
-          python3 tools/normalize-lifecycle.py
           grep -Fq '$this->signalDeleted($videoId);' classes/Videos_PermanentPool.php
           grep -Fq 'foreach ($previousItems as $videoId => $item)' classes/Videos_PermanentPool.php
           grep -Fq '$this->signalChannelVideos($channelId, $afterExcluded);' classes/Videos_Moderation.php
@@ -194,10 +193,10 @@ jobs:
             functions.inc install_updates.php \
             language/english.php language/french_france.php \
             public_html/css/admin.css \
-            tools/normalize-admin-ui.py tools/normalize-storage-upgrade.py tools/normalize-lifecycle.py \
+            tools/normalize-admin-ui.py tools/normalize-storage-upgrade.py \
             dist
           if git diff --cached --quiet; then
             exit 0
           fi
-          git commit -m "Normalize Videos lifecycle events"
+          git commit -m "Normalize Videos admin and storage archive"
           git push origin "HEAD:${GITHUB_REF_NAME}"
