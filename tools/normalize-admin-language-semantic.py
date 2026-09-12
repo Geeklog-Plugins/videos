@@ -14,10 +14,6 @@ SOURCE_FILES = [
 PAIR_RE = re.compile(r"'(text_[0-9a-f]{12})'\s*=>\s*('(?:\\.|[^'\\])*')")
 CALL_RE = re.compile(r"VIDEOS_adminText\('(text_[0-9a-f]{12})'\)")
 
-# Three labels were introduced directly in the unified admin shell and never
-# existed in the old hashed language table. Keep their translations explicit
-# for the one-time semantic migration instead of inventing new compatibility
-# hashes.
 EXPLICIT = {
     'text_3b26dc5fb51b': {
         'english.php': "'Open repair tools'",
@@ -36,8 +32,7 @@ EXPLICIT = {
 
 def php_unquote(literal):
     value = literal[1:-1]
-    value = value.replace("\\'", "'").replace('\\\\', '\\')
-    return value
+    return value.replace("\\'", "'").replace('\\\\', '\\')
 
 
 def semantic_name(text, fallback, used):
@@ -56,6 +51,29 @@ def semantic_name(text, fallback, used):
         key += '_' + fallback[-4:]
     used.add(key)
     return key
+
+
+def strip_legacy_tables(text):
+    lines = text.splitlines(True)
+    out = []
+    skipping = False
+    depth = 0
+    for line in lines:
+        if not skipping and re.search(r'^\s*\$LANG_VIDEOS_ADMIN(?:_TEXT)?\s*=', line):
+            skipping = True
+            depth = line.count('(') - line.count(')')
+            if depth <= 0 and ';' in line:
+                skipping = False
+            continue
+        if skipping:
+            depth += line.count('(') - line.count(')')
+            if depth <= 0 and ';' in line:
+                skipping = False
+            continue
+        if re.match(r'^\s*//\s*(?:0\.18\.0 administration compatibility translations|VIDEOS ADMIN .*KEYS 0\.19\.0|END VIDEOS ADMIN .*KEYS 0\.19\.0)\s*$', line):
+            continue
+        out.append(line)
+    return ''.join(out)
 
 
 languages = {}
@@ -82,38 +100,21 @@ used_names = set()
 key_map = {}
 for old_key in sorted(used_hashes):
     key_map[old_key] = semantic_name(
-        php_unquote(english_pairs[old_key]),
-        old_key,
-        used_names
+        php_unquote(english_pairs[old_key]), old_key, used_names
     )
 
 for path in SOURCE_FILES:
     text = path.read_text(encoding='utf-8')
     text = CALL_RE.sub(lambda m: "$LANG_VIDEOS['%s']" % key_map[m.group(1)], text)
-    text = re.sub(r"^\s*\$message\s*=\s*VIDEOS_localizeAdminText\(\$message\);\s*\n", '', text, flags=re.M)
+    text = re.sub(
+        r"^\s*\$message\s*=\s*VIDEOS_localizeAdminText\(\$message\);\s*\n",
+        '', text, flags=re.M
+    )
     path.write_text(text, encoding='utf-8')
 
 for path in LANG_FILES:
     text, pairs = languages[path]
-    text = re.sub(
-        r"\n?// 0\.18\.0 administration compatibility translations\s*\n\$LANG_VIDEOS_ADMIN_TEXT\s*=\s*array\s*\(.*?\n\);\s*",
-        '\n',
-        text,
-        flags=re.S,
-    )
-    text = re.sub(
-        r"\n?// VIDEOS ADMIN LANGUAGE KEYS 0\.19\.0\s*\n\$LANG_VIDEOS_ADMIN\s*=\s*array\(.*?\n\);\s*// END VIDEOS ADMIN LANGUAGE KEYS 0\.19\.0\s*",
-        '\n',
-        text,
-        flags=re.S,
-    )
-    text = re.sub(
-        r"\n?// VIDEOS ADMIN (?:FINAL|COMPAT) KEYS 0\.19\.0\s*\n\$LANG_VIDEOS_ADMIN\s*=\s*array_merge\(\$LANG_VIDEOS_ADMIN,\s*array\(.*?\n\)\);\s*// END VIDEOS ADMIN (?:FINAL|COMPAT) KEYS 0\.19\.0\s*",
-        '\n',
-        text,
-        flags=re.S,
-    )
-
+    text = strip_legacy_tables(text)
     lines = ['\n// Videos 0.19.0 semantic administration strings']
     for old_key in sorted(used_hashes):
         lines.append("$LANG_VIDEOS['%s'] = %s;" % (key_map[old_key], pairs[old_key]))
@@ -125,9 +126,7 @@ functions = Path('functions.inc')
 text = functions.read_text(encoding='utf-8')
 text = re.sub(
     r"\nfunction VIDEOS_adminText\(\$key\)\s*\{.*?\n\}\s*\nfunction VIDEOS_localizeAdminText\(\$text\)\s*\{.*?\n\}\s*",
-    '\n',
-    text,
-    flags=re.S,
+    '\n', text, flags=re.S
 )
 functions.write_text(text, encoding='utf-8')
 
