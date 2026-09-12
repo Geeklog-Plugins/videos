@@ -19,6 +19,7 @@ class Videos_Moderation
             !in_array($state, array('neutral', 'blocked'), true)) {
             return false;
         }
+        $before = $this->getVideoState($videoId);
         $saved = $this->setState(
             'video',
             $videoId,
@@ -27,7 +28,8 @@ class Videos_Moderation
             $actorHash
         );
         if ($saved) {
-            $this->signalVideoDecision($videoId);
+            $beforeState = isset($before['state']) ? $before['state'] : 'neutral';
+            $this->signalVideoDecision($videoId, $beforeState, $state);
         }
         return $saved;
     }
@@ -45,6 +47,7 @@ class Videos_Moderation
             !in_array($state, $allowed, true)) {
             return false;
         }
+        $before = $this->getChannelState($channelId);
         $saved = $this->setState(
             'channel',
             $channelId,
@@ -53,7 +56,8 @@ class Videos_Moderation
             $actorHash
         );
         if ($saved) {
-            $this->signalChannelDecision($channelId);
+            $beforeState = isset($before['state']) ? $before['state'] : 'neutral';
+            $this->signalChannelDecision($channelId, $beforeState, $state);
         }
         return $saved;
     }
@@ -146,45 +150,101 @@ class Videos_Moderation
         );
     }
 
-    private function signalVideoDecision($videoId)
+    private function signalVideoDecision($videoId, $beforeState, $afterState)
     {
-        if (!function_exists('VIDEOS_signalSaved')) {
+        if ($beforeState === $afterState) {
             return;
         }
-        VIDEOS_signalSaved($videoId);
-        VIDEOS_signalSaved('catalogue');
-        VIDEOS_signalSaved('rankings:videos');
+
+        $pool = new Videos_PermanentPool(
+            $this->store,
+            new Videos_Cache($this->store)
+        );
+        if ($pool->contains($videoId)) {
+            if ($afterState === 'blocked') {
+                $this->signalDeleted($videoId);
+            } elseif ($beforeState === 'blocked') {
+                $this->signalSaved($videoId);
+            }
+        }
+
+        $this->signalSaved('catalogue');
+        $this->signalSaved('rankings:videos');
     }
 
-    private function signalChannelDecision($channelId)
+    private function signalChannelDecision($channelId, $beforeState, $afterState)
     {
-        if (!function_exists('VIDEOS_signalSaved')) {
+        if ($beforeState === $afterState) {
             return;
         }
-        VIDEOS_signalSaved('channel:' . $channelId);
-        VIDEOS_signalSaved('catalogue');
-        VIDEOS_signalSaved('rankings:channels');
-        VIDEOS_signalSaved('channels');
-        VIDEOS_signalSaved('rankings:videos');
 
-        if (!class_exists('Videos_Ranking') ||
-            !class_exists('Videos_RatingStats') ||
-            !class_exists('Videos_VideoStats') ||
-            !class_exists('Videos_Cache')) {
-            return;
-        }
-        $cache = new Videos_Cache($this->store);
-        $ranking = new Videos_Ranking(
-            $this->store,
-            new Videos_RatingStats($this->store),
-            new Videos_VideoStats($this->store),
-            $cache
+        $beforeExcluded = in_array(
+            $beforeState,
+            array('blocked', 'disabled'),
+            true
         );
-        foreach ($ranking->getGlobal(500) as $videoId => $item) {
-            if (isset($item['channel_id']) &&
-                (string) $item['channel_id'] === $channelId) {
-                VIDEOS_signalSaved($videoId);
+        $afterExcluded = in_array(
+            $afterState,
+            array('blocked', 'disabled'),
+            true
+        );
+
+        if ($afterExcluded && !$beforeExcluded) {
+            $this->signalDeleted('channel:' . $channelId);
+        } else {
+            $this->signalSaved('channel:' . $channelId);
+        }
+
+        if ($beforeExcluded !== $afterExcluded) {
+            $this->signalChannelVideos($channelId, $afterExcluded);
+        }
+
+        $this->signalSaved('catalogue');
+        $this->signalSaved('rankings:channels');
+        $this->signalSaved('channels');
+        $this->signalSaved('rankings:videos');
+    }
+
+    private function signalChannelVideos($channelId, $deleted)
+    {
+        $pool = new Videos_PermanentPool(
+            $this->store,
+            new Videos_Cache($this->store)
+        );
+        $records = $pool->records();
+        $items = isset($records['items']) && is_array($records['items'])
+            ? $records['items'] : array();
+        $cache = new Videos_Cache($this->store);
+
+        foreach ($items as $videoId => $item) {
+            $video = $cache->getVideo($videoId, true);
+            if (!is_array($video) || empty($video['snippet']['channelId']) ||
+                (string) $video['snippet']['channelId'] !== $channelId) {
+                continue;
             }
+            if ($deleted) {
+                $this->signalDeleted($videoId);
+            } else {
+                $this->signalSaved($videoId);
+            }
+        }
+    }
+
+    private function signalSaved($id)
+    {
+        if (function_exists('VIDEOS_signalSaved')) {
+            VIDEOS_signalSaved($id);
+        } elseif (function_exists('PLG_itemSaved')) {
+            PLG_itemSaved($id, 'videos');
+        }
+    }
+
+    private function signalDeleted($id)
+    {
+        if (function_exists('VIDEOS_signalDeleted')) {
+            VIDEOS_signalDeleted($id);
+        } elseif (function_exists('PLG_itemDeleted')) {
+            PLG_itemDeleted($id, 'videos');
         }
     }
 

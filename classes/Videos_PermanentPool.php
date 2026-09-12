@@ -143,17 +143,20 @@ class Videos_PermanentPool
             return false;
         }
 
-        $isEditorialSave = ($state === 'added' && !$wasPublished)
-            || ($state === 'pinned' && !$wasPinned)
-            || ($state === 'unpinned' && $wasPinned);
-        if ($isEditorialSave) {
-            if (function_exists('VIDEOS_signalSaved')) {
-                VIDEOS_signalSaved($videoId);
-                VIDEOS_signalSaved('catalogue');
-                VIDEOS_signalSaved('channels');
-            } elseif (function_exists('PLG_itemSaved')) {
-                PLG_itemSaved($videoId, 'videos');
-            }
+        $isEditorialSave = in_array(
+            $state,
+            array('added', 'pinned', 'unpinned'),
+            true
+        );
+        $isEditorialDelete = $wasPublished &&
+            in_array($state, array('removed', 'excluded'), true);
+
+        if ($isEditorialDelete) {
+            $this->signalDeleted($videoId);
+            $this->signalCollections();
+        } elseif ($isEditorialSave) {
+            $this->signalSaved($videoId);
+            $this->signalCollections();
         }
         return true;
     }
@@ -242,15 +245,21 @@ class Videos_PermanentPool
             return false;
         }
 
+        $changed = false;
         foreach ($items as $videoId => $item) {
             if (!isset($previousItems[$videoId])) {
-                if (function_exists('VIDEOS_signalSaved')) {
-                    VIDEOS_signalSaved($videoId);
-                    VIDEOS_signalSaved('catalogue');
-                } elseif (function_exists('PLG_itemSaved')) {
-                    PLG_itemSaved($videoId, 'videos');
-                }
+                $this->signalSaved($videoId);
+                $changed = true;
             }
+        }
+        foreach ($previousItems as $videoId => $item) {
+            if (!isset($items[$videoId])) {
+                $this->signalDeleted($videoId);
+                $changed = true;
+            }
+        }
+        if ($changed) {
+            $this->signalCollections();
         }
         return $document['data'];
     }
@@ -454,6 +463,32 @@ class Videos_PermanentPool
             'items' => array(),
             'excluded' => array()
         );
+    }
+
+    private function signalSaved($id)
+    {
+        if (function_exists('VIDEOS_signalSaved')) {
+            VIDEOS_signalSaved($id);
+        } elseif (function_exists('PLG_itemSaved')) {
+            PLG_itemSaved($id, 'videos');
+        }
+    }
+
+    private function signalDeleted($id)
+    {
+        if (function_exists('VIDEOS_signalDeleted')) {
+            VIDEOS_signalDeleted($id);
+        } elseif (function_exists('PLG_itemDeleted')) {
+            PLG_itemDeleted($id, 'videos');
+        }
+    }
+
+    private function signalCollections()
+    {
+        $this->signalSaved('catalogue');
+        $this->signalSaved('channels');
+        $this->signalSaved('rankings:videos');
+        $this->signalSaved('rankings:channels');
     }
 
     private function listSet($value)
