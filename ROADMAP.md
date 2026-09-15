@@ -5,173 +5,69 @@ This roadmap aligns the Videos plugin with the current recommendations documente
 - Geeklog 2.1.1 through 2.2.2
 - PHP 5.6 through PHP 8.1
 
-The objective is not to add more features immediately. The priority is to stabilize the plugin, simplify its architecture, and strengthen interoperability before extending it further.
+The objective remains to stabilize the plugin, simplify its architecture, and strengthen interoperability before extending it further.
 
-## 0.19.0 — urgent stabilization before release
+## 0.19.0 — release stabilization status
 
-Version 0.19.0 remains the active stabilization release. The following work should be completed before considering it ready for broad deployment.
+Version 0.19.0 is now functionally complete and in final release validation.
 
-### P0 — move persistent storage migration out of runtime bootstrap
+### Completed
 
-**Current issue**
+- Persistent storage migration no longer runs implicitly during normal bootstrap.
+- Legacy storage remains readable until an explicit upgrade or repair path performs migration.
+- Storage migration is site-scoped, idempotent, restartable and non-destructive.
+- Shared-files multisite behavior is isolated by each site's `path_data`.
+- Save/delete lifecycle events are implemented for public item transitions.
+- Administration language keys use semantic identifiers instead of hashed `text_xxx` keys.
+- Overview, Actions, Statistics and Moderation now use a consistent administration shell and styling.
+- Native Geeklog Content Syndication support is implemented with:
+  - `plugin_getfeednames_videos()`;
+  - `plugin_getfeedcontent_videos()`;
+  - Item Info reuse;
+  - no YouTube discovery request during feed generation.
+- Install/uninstall metadata has been aligned, including configuration features such as `config.videos.tab_seo`.
+- The installable archive is generated as `videos_0.19.0_2.1.1.zip`.
+- `plugin.json` is included for current plugin metadata discovery.
+- Release status is now `stable`.
+- Manual testing has been completed on Geeklog 2.1.1 and 2.2.2, including the principal fresh-install and upgrade scenarios.
+- CI validates PHP 5.6, 7.4 and 8.1 compatibility, storage regression behavior, Geeklog integration contracts, install/uninstall consistency and administration language coverage.
+- A duplicate declaration of `plugin_getfeedcontent_videos()` between `geeklog_integration.php` and `interoperability.php` was removed. The canonical implementation is now in `interoperability.php`.
 
-`Videos_Bootstrap` can currently migrate legacy plugin data merely because the plugin is loaded. This is convenient, but it conflicts with the shared-files upgrade safety principles documented in the Memorandum.
+### Final release safeguards
 
-**Target**
+The remaining 0.19.0 work is limited to release hardening rather than feature development.
 
-- `Videos_Bootstrap` must detect the active site's current storage state without performing a destructive or persistent migration during normal requests.
-- Legacy storage must remain readable until the active site explicitly completes its plugin upgrade.
-- The `0.17.x -> current` storage migration must run from the controlled upgrade path or an explicit repair action.
-- Migration must remain site-scoped, idempotent, restartable and non-destructive.
-- Existing legacy data must be preserved until the new destination has been written and verified.
-- Uploading new shared plugin files must not force all sites using those files to migrate at the same time.
+#### Add a combined integration-load CI test
 
-**Primary files**
+The duplicate feed callback exposed a gap in validation: individual PHP files can lint successfully while still declaring the same global callback when loaded together.
 
-- `classes/Videos_Bootstrap.php`
-- `install_updates.php`
-- `admin/repair.php`
-
-**Done when**
-
-- frontend and admin requests can use new plugin files while the current site is still on the previous persisted storage state;
-- only explicit upgrade/repair code performs the migration;
-- repeated migration attempts are safe;
-- two sites with separate `path_data` values remain isolated.
-
-### P0 — complete lifecycle events
-
-Videos already emits `PLG_itemSaved()` through the interoperability layer, but removal paths must be audited and completed.
-
-**Target**
-
-Use lifecycle events consistently for every addressable item transition:
-
-- newly published / re-admitted / metadata changed -> `PLG_itemSaved()`;
-- removed / excluded / no longer public -> `PLG_itemDeleted()`;
-- collection pages affected by a change should receive the appropriate save signal where useful.
-
-Important mutation paths include:
-
-- manual permanent-pool actions;
-- automatic permanent-pool synchronization;
-- moderation state changes;
-- channel exclusion / re-enablement;
-- any alternate administration or maintenance path affecting public content.
-
-**Primary files**
-
-- `classes/Videos_PermanentPool.php`
-- `classes/Videos_Moderation.php`
-- `interoperability.php`
-
-**Done when**
-
-Hub, IndexNow, XMLSitemap and other consumers can rely on lifecycle events without plugin-specific polling.
-
-### P0 — remove hashed administration language keys
-
-The temporary `text_xxx` keys introduced during administration refactoring made the interface difficult to maintain and already caused visible translation regressions.
-
-**Target**
-
-Replace hashed identifiers with semantic language keys, for example:
+Add a CI test that loads the actual integration files in the same process, at minimum:
 
 ```php
-$LANG_VIDEOS['admin_curation_title']
-$LANG_VIDEOS['admin_curation_intro']
-$LANG_VIDEOS['admin_stats_public_content']
+require_once 'geeklog_integration.php';
+require_once 'interoperability.php';
 ```
 
-Remove the now-unnecessary compatibility translation layers once no page depends on them.
+The test should fail on duplicate global Plugin API callbacks or other fatal integration-load conflicts.
 
-**Primary files**
+#### Keep upgrade testing in a valid Geeklog state
 
-- `language/english.php`
-- `language/french_france.php`
-- `functions.inc`
-- `admin/index.php`
-- `admin/actions.php`
-- `admin/stats.php`
-- `admin/moderation.php`
+A `Directory not empty` warning observed during a Geeklog 2.1.1 plugin upload was caused by manually deleting `plugins/videos` before starting the upgrade while the corresponding public plugin directory still existed.
 
-**Done when**
+This left Geeklog's upgrade mechanism in an inconsistent filesystem state: Geeklog could no longer perform its normal sequence of renaming the existing plugin/public/admin directories to `.previous` before moving the new archive into place.
 
-- no administration page renders `text_xxx` identifiers;
-- no hashed language identifiers remain in active administration code;
-- the four administration pages use the same semantic localization mechanism;
-- CI validates that referenced language keys exist in both English and French.
+This is therefore not considered a Videos packaging defect.
 
-### P0 — finish administration UI consistency
+Upgrade tests should preserve the installed plugin directory structure and let Geeklog perform its own backup/rename sequence.
 
-The four administration pages must behave as one interface, not four independently evolved screens.
+### Release gate
 
-**Target**
+0.19.0 is ready for release when:
 
-- one shared admin shell;
-- one navigation helper;
-- consistent headings, panels, buttons, forms, tables and spacing;
-- no page-specific inline CSS;
-- content never touches the outer container edges;
-- all visible UI strings come from language files;
-- responsive behavior remains usable on small screens.
-
-**Pages**
-
-- Overview
-- Actions
-- Statistics
-- Moderation
-
-### P1 — complete native Content Syndication support
-
-`plugin_getfeedcontent_videos()` already exposes the persistent editorial corpus.
-
-Add the missing native feed declaration:
-
-```php
-plugin_getfeednames_videos()
-```
-
-Prefer a simple initial feed such as the permanent/public video catalogue rather than multiple overlapping feeds.
-
-Optional for 0.19.0 if straightforward:
-
-```php
-plugin_feedupdatecheck_videos()
-```
-
-The feed implementation must reuse Item Info metadata and must not trigger YouTube discovery requests.
-
-### P1 — fix packaging / uninstall consistency
-
-Audit installation and removal metadata before release.
-
-Known item:
-
-- ensure `config.videos.tab_seo` and every currently-created feature are also removed by `plugin_autouninstall_videos()`.
-
-Also verify that the installable ZIP contains only runtime files required by Geeklog and that build validation covers the final administration/language state.
-
-### P1 — release validation matrix
-
-Before declaring 0.19.0 stable, test at least:
-
-- fresh install on Geeklog 2.1.1;
-- fresh install on Geeklog 2.2.2;
-- upgrade from 0.17.1;
-- upgrade from 0.18.0;
-- PHP 5.6;
-- PHP 8.1;
-- storage migration success;
-- storage migration retry;
-- unwritable preferred storage path with legacy fallback;
-- two sites sharing plugin files but using separate `path_data` values;
-- Content Syndication;
-- XMLSitemap fallback through Item Info;
-- Geeklog search and statistics;
-- administration pages in English and French;
-- autotag and dynamic block rendering.
+1. `Build installable Videos archive` is green on the final commit;
+2. `Validate Videos release matrix` is green on the final commit;
+3. the combined integration-load CI safeguard is added and green;
+4. no release-blocking regression remains in storage migration, administration, search, syndication, lifecycle events or packaging.
 
 ## 0.20.0 — architectural consolidation
 
@@ -311,11 +207,12 @@ Add automated or reproducible tests for:
 - Content Syndication;
 - XMLSitemap Item Info fallback;
 - search and statistics callbacks;
-- moderation visibility rules.
+- moderation visibility rules;
+- combined loading of all Plugin API integration files.
 
 ### P3 — optional feed regeneration optimization
 
-If not completed in 0.19.0, add:
+Add, if useful:
 
 ```php
 plugin_feedupdatecheck_videos()
@@ -382,7 +279,7 @@ The following are intentionally not priorities:
 
 **Stabilize what already exists.**
 
-The release should be safe to install, safe to upgrade, multilingual, interoperable, and predictable in shared-files multisite environments.
+The release is intended to be safe to install, safe to upgrade, multilingual, interoperable, and predictable in shared-files multisite environments.
 
 ### 0.20.0
 
