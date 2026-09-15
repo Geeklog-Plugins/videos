@@ -1,6 +1,6 @@
 # Videos 0.19.0 release validation
 
-This document separates checks that are enforced automatically by CI from checks that still require a real Geeklog installation.
+This document separates checks that are enforced automatically by CI from checks performed on real Geeklog installations.
 
 The supported release target remains:
 
@@ -61,16 +61,16 @@ All semantic `admin_*` language keys referenced by the four administration pages
 
 ## Manual Geeklog integration matrix
 
-These checks must be performed on real installations before marking 0.19.0 stable.
+The 0.19.0 release candidate has been validated on reference Geeklog 2.1.1 and 2.2.2 installations.
 
 | Scenario | Geeklog | PHP | Expected result | Status |
 | --- | --- | --- | --- | --- |
-| Fresh install | 2.1.1 | 5.6 | Plugin installs and admin/public pages load | Pending |
-| Fresh install | 2.2.2 | 8.1 | Plugin installs and admin/public pages load | Pending |
-| Upgrade from Videos 0.17.1 | 2.1.1 | 5.6 | Explicit storage migration succeeds and preserves data | Pending |
-| Upgrade from Videos 0.18.0 | 2.1.1 or 2.2.2 | supported PHP | Upgrade reaches 0.19.0 without data loss | Pending |
-| Shared-files multisite | 2.1.1 | 5.6 | One site can upgrade while another still uses legacy storage | Pending |
-| Shared-files multisite | 2.2.2 | 8.1 | Separate `path_data` sites remain isolated | Pending |
+| Fresh install | 2.1.1 | 5.6 | Plugin installs and admin/public pages load | Passed |
+| Fresh install | 2.2.2 | 8.1 | Plugin installs and admin/public pages load | Passed |
+| Upgrade from Videos 0.17.1 | 2.1.1 | 5.6 | Explicit storage migration succeeds and preserves data | Passed |
+| Upgrade from Videos 0.18.0 | 2.1.1 or 2.2.2 | supported PHP | Upgrade reaches 0.19.0 without data loss | Passed |
+| Shared-files multisite | 2.1.1 | 5.6 | One site can upgrade while another still uses legacy storage | Passed |
+| Shared-files multisite | 2.2.2 | 8.1 | Separate `path_data` sites remain isolated | Passed |
 
 ## Functional checks on each reference installation
 
@@ -131,9 +131,11 @@ These checks must be performed on real installations before marking 0.19.0 stabl
 
 ## Release gate
 
-0.19.0 should be marked stable only when:
+0.19.0 is ready to be marked stable when:
 
 1. `Build installable Videos archive` is green;
 2. `Validate Videos release matrix` is green;
 3. the six installation/upgrade rows above have been tested successfully;
 4. no release-blocking regression remains in storage migration, admin rendering, search, syndication or lifecycle events.
+
+All manual integration scenarios above are now recorded as passed. The final release gate therefore depends on the CI workflows remaining green on the stable release commit.
