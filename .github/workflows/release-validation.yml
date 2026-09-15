@@ -1,0 +1,215 @@
+name: Validate Videos release matrix
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - 0.19.0
+    paths:
+      - '**.php'
+      - '**.inc'
+      - 'language/**'
+      - 'tools/**'
+      - '.github/workflows/release-validation.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  php-compatibility:
+    name: PHP ${{ matrix.php }} compatibility
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        php:
+          - '5.6'
+          - '7.4'
+          - '8.1'
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v5
+
+      - name: Set up PHP ${{ matrix.php }}
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          coverage: none
+          tools: none
+
+      - name: Show PHP version
+        run: php -v
+
+      - name: Lint runtime PHP sources
+        shell: bash
+        run: |
+          set -euo pipefail
+          while IFS= read -r -d '' file; do
+            php -l "$file" >/dev/null
+          done < <(find . -type f \( -name '*.php' -o -name '*.inc' \) \
+            -not -path './.git/*' -not -path './dist/*' -print0)
+
+      - name: Test explicit storage migration
+        run: php tools/test-storage-migration.php
+
+  geeklog-core-contracts:
+    name: Geeklog ${{ matrix.label }} core API contracts
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - label: '2.1.1'
+            ref: geeklog_2_1_1_stable
+          - label: '2.2.2'
+            ref: v2.2.2
+
+    steps:
+      - name: Check out Videos source
+        uses: actions/checkout@v5
+
+      - name: Check out Geeklog Core ${{ matrix.label }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          git clone --depth 1 --branch '${{ matrix.ref }}' \
+            https://github.com/Geeklog-Core/geeklog.git geeklog-core
+
+      - name: Validate required Core Plugin APIs
+        shell: bash
+        run: |
+          set -euo pipefail
+          core='geeklog-core/system/lib-plugins.php'
+          grep -Fq 'function PLG_getFeedNames(' "$core"
+          grep -Fq 'function PLG_getFeedContent(' "$core"
+          grep -Fq 'function PLG_getItemInfo(' "$core"
+          grep -Fq 'function PLG_itemSaved(' "$core"
+          grep -Fq 'function PLG_itemDeleted(' "$core"
+          grep -Fq 'function PLG_collectTags(' "$core"
+
+      - name: Validate Videos callbacks match Core discovery conventions
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -Fq 'function plugin_getfeednames_videos()' interoperability.php
+          grep -Fq 'function plugin_getfeedcontent_videos(' interoperability.php
+          grep -Fq 'function plugin_getiteminfo_videos(' interoperability.php
+          grep -Fq 'function plugin_autotags_videos(' interoperability.php
+          grep -Fq 'function plugin_searchtypes_videos()' geeklog_integration.php
+          grep -Fq 'function plugin_dopluginsearch_videos(' geeklog_integration.php
+
+  plugin-contracts:
+    name: Geeklog integration contracts
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v5
+
+      - name: Validate declared compatibility and integration loading
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -Fq "define('VIDEOS_MIN_GEEKLOG_VERSION', '2.1.1')" version.php
+          grep -Fq "define('VIDEOS_MIN_PHP_VERSION', '5.6.0')" version.php
+          grep -Fq "plugins/videos/geeklog_integration.php" functions.inc
+          grep -Fq "plugins/videos/interoperability.php" functions.inc
+
+      - name: Validate native Geeklog callbacks
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -Fq 'function plugin_searchtypes_videos()' geeklog_integration.php
+          grep -Fq 'function plugin_dopluginsearch_videos(' geeklog_integration.php
+          grep -Fq 'function plugin_statssummary_videos()' geeklog_integration.php
+          grep -Fq 'function plugin_getiteminfo_videos(' interoperability.php
+          grep -Fq 'function plugin_idtourl_videos(' interoperability.php
+          grep -Fq 'function plugin_urltoid_videos(' interoperability.php
+          grep -Fq 'function plugin_getfeednames_videos()' interoperability.php
+          grep -Fq 'function plugin_getfeedcontent_videos(' interoperability.php
+          grep -Fq 'function plugin_autotags_videos(' interoperability.php
+
+      - name: Validate lifecycle and storage safety contracts
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -Fq 'public function migrateLegacyStorage()' classes/Videos_Bootstrap.php
+          grep -Fq 'Runtime bootstrap must never migrate persistent data implicitly.' classes/Videos_Bootstrap.php
+          grep -Fq '$bootstrap->migrateLegacyStorage()' install_updates.php
+          if grep -Fq '$this->migrateLegacyData($this->legacyDataRoot' classes/Videos_Bootstrap.php; then
+            echo 'Runtime bootstrap still performs implicit storage migration.' >&2
+            exit 1
+          fi
+          grep -Fq "function_exists('PLG_itemDeleted')" classes/Videos_Moderation.php
+          grep -Fq "function_exists('PLG_itemDeleted')" classes/Videos_PermanentPool.php
+
+      - name: Validate install and uninstall feature symmetry
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+
+          text = Path('autoinstall.php').read_text(encoding='utf-8')
+          install_match = re.search(
+              r"\$features\s*=\s*array\((.*?)\);\s*\n\s*\$mappings",
+              text,
+              re.S,
+          )
+          uninstall_match = re.search(
+              r"'features'\s*=>\s*array\((.*?)\)\s*,\s*\n\s*'php_blocks'",
+              text,
+              re.S,
+          )
+          if not install_match or not uninstall_match:
+              raise SystemExit('Unable to parse install/uninstall feature lists.')
+
+          key_re = re.compile(r"'([^']+)'\s*=>")
+          value_re = re.compile(r"'([^']+)'\s*,?")
+          installed = set(key_re.findall(install_match.group(1)))
+          removed = set(value_re.findall(uninstall_match.group(1)))
+          missing = sorted(installed - removed)
+          extra = sorted(removed - installed)
+          if missing or extra:
+              raise SystemExit(
+                  'Feature mismatch. Missing on uninstall: %s; uninstall-only: %s'
+                  % (missing, extra)
+              )
+          print('Install/uninstall feature symmetry: OK (%d features)' % len(installed))
+          PY
+
+      - name: Validate semantic administration language parity
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+
+          admin_files = [
+              Path('admin/index.php'), Path('admin/actions.php'),
+              Path('admin/stats.php'), Path('admin/moderation.php')
+          ]
+          used = set()
+          for path in admin_files:
+              used.update(re.findall(
+                  r"\$LANG_VIDEOS\['(admin_[A-Za-z0-9_]+)'\]",
+                  path.read_text(encoding='utf-8')
+              ))
+
+          for lang in ('language/english.php', 'language/french_france.php'):
+              text = Path(lang).read_text(encoding='utf-8')
+              defined = set(re.findall(
+                  r"\$LANG_VIDEOS\['(admin_[A-Za-z0-9_]+)'\]\s*=",
+                  text
+              ))
+              defined.update(re.findall(
+                  r"'(admin_[A-Za-z0-9_]+)'\s*=>",
+                  text
+              ))
+              missing = sorted(used - defined)
+              if missing:
+                  raise SystemExit('%s missing: %s' % (lang, ', '.join(missing)))
+          print('Administration language parity: OK (%d keys)' % len(used))
+          PY

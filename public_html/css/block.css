@@ -1,0 +1,130 @@
+/* Videos dynamic block: loaded only when the block is rendered. */
+
+.videos-block-list {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.videos-block-list li {
+    margin: 0;
+    padding: .55rem 0;
+    border-bottom: 1px solid rgba(127, 127, 127, .24);
+}
+
+.videos-block-list li:last-child {
+    border-bottom: 0;
+}
+
+.videos-block-list a {
+    position: relative;
+    display: block;
+    color: inherit;
+    text-decoration: none;
+}
+
+/*
+ * The pseudo-element covers only the 16:9 thumbnail area.
+ * The centered SVG avoids font-glyph alignment differences and remains
+ * independent from the title height below the image.
+ */
+.videos-block-list a:not(.videos-block-no-image)::before {
+    content: "";
+    position: absolute;
+    z-index: 1;
+    top: 0;
+    left: 0;
+    display: block;
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    border-radius: .25rem;
+    background-color: transparent;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='36' height='26' viewBox='0 0 36 26'%3E%3Crect width='36' height='26' rx='7' fill='%23cc0000' fill-opacity='.92'/%3E%3Cpath d='M15 8.25 24 13l-9 4.75z' fill='white'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: 36px 26px;
+    pointer-events: none;
+    transition: filter .16s ease, background-size .16s ease;
+}
+
+.videos-block-list a:not(.videos-block-no-image):hover::before,
+.videos-block-list a:not(.videos-block-no-image):focus::before {
+    filter: brightness(.9);
+    background-size: 37px 27px;
+}
+
+.videos-block-list a.videos-block-no-image {
+    padding-top: .15rem;
+}
+
+.videos-block-list a:hover span,
+.videos-block-list a:focus span {
+    text-decoration: underline;
+}
+
+.videos-block-list a:hover img,
+.videos-block-list a:focus img {
+    filter: brightness(.82);
+}
+
+.videos-block-list img {
+    display: block;
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    border-radius: .25rem;
+    object-fit: cover;
+    transition: filter .18s ease;
+}
+
+.videos-block-list span {
+    display: block;
+    margin-top: .45rem;
+    overflow-wrap: anywhere;
+    font-size: .92rem;
+    line-height: 1.3;
+}
+
+.videos-block-mode {
+    margin: 0 0 .65rem;
+    padding: .4rem .55rem;
+    border-radius: .3rem;
+    background: rgba(127, 127, 127, .1);
+    font-size: .82rem;
+    line-height: 1.3;
+    text-align: center;
+    opacity: .85;
+}
+
+.videos-block-channels {
+    counter-reset: videos-block-channel;
+}
+
+.videos-block-channels li {
+    display: grid;
+    grid-template-columns: 1.7rem minmax(0, 1fr);
+    gap: .4rem;
+    align-items: center;
+    padding: .6rem .45rem;
+    counter-increment: videos-block-channel;
+}
+
+.videos-block-channels li::before {
+    content: counter(videos-block-channel) ".";
+    font-weight: bold;
+}
+
+.videos-block-channels li:nth-child(odd) {
+    border-radius: .3rem;
+    background: rgba(127, 127, 127, .06);
+}
+
+.videos-block-channels span {
+    margin: 0;
+    font-size: .92rem;
+    font-weight: 600;
+}
+
+.videos-block-more {
+    margin: .75rem 0 0;
+    text-align: center;
+}

@@ -199,6 +199,56 @@ $LANG_VIDEOS = array(
     'video_about_title' => 'À propos de cette vidéo'
 );
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// 0.19.0 unified admin interface strings
+$LANG_VIDEOS['admin_actions_column'] = 'Actions';
+$LANG_VIDEOS['admin_cache_label'] = 'Cache';
+$LANG_VIDEOS['admin_yes'] = 'Oui';
+$LANG_VIDEOS['admin_no'] = 'Non';
+$LANG_VIDEOS['admin_status_ok'] = 'OK';
+$LANG_VIDEOS['admin_remove_help'] = 'enlève la vidéo du catalogue permanent, mais elle pourra être sélectionnée de nouveau.';
+$LANG_VIDEOS['admin_exclude_help'] = 'l’empêche d’être réintégrée tant qu’elle n’est pas réautorisée.';
+$LANG_VIDEOS['admin_consult'] = 'Consultez';
+$LANG_VIDEOS['admin_byte_unit'] = 'o';
+// END 0.19.0 unified admin interface strings
+
 // 0.18.0 interface strings
 $LANG_VIDEOS['admin_nav_overview'] = 'Vue générale';
 $LANG_VIDEOS['admin_nav_actions'] = 'Actions';
@@ -247,156 +297,6 @@ $LANG_VIDEOS['channels_empty'] = 'Aucune chaîne recommandée n’est encore dis
 $LANG_VIDEOS['channels_unavailable'] = 'L’annuaire des chaînes est temporairement indisponible.';
 $LANG_VIDEOS['channels_view_channel'] = 'Voir les vidéos de cette chaîne';
 
-// 0.18.0 administration compatibility translations
-$LANG_VIDEOS_ADMIN_TEXT = array (
-  'Le stockage du plugin Videos est indisponible. Consultez les outils de réparation.' => 'Le stockage du plugin Videos est indisponible. Consultez les outils de réparation.',
-  'Ouvrir les outils de réparation' => 'Ouvrir les outils de réparation',
-  'Le stockage du plugin Videos est indisponible.' => 'Le stockage du plugin Videos est indisponible.',
-  'Vue générale' => 'Vue générale',
-  'Ajouter ou épingler des vidéos, gérer les chaînes, l’API YouTube, la maintenance et IndexNow.' => 'Ajouter ou épingler des vidéos, gérer les chaînes, l’API YouTube, la maintenance et IndexNow.',
-  'Statistiques' => 'Statistiques',
-  'Consulter le réservoir, les classements, le fonds permanent, le quota et les caches.' => 'Consulter le réservoir, les classements, le fonds permanent, le quota et les caches.',
-  'Modération' => 'Modération',
-  'Bloquer, autoriser ou prioriser des vidéos et des chaînes.' => 'Bloquer, autoriser ou prioriser des vidéos et des chaînes.',
-  'Repères' => 'Repères',
-  'Vidéos dans le réservoir' => 'Vidéos dans le réservoir',
-  'Vidéos dans le classement global' => 'Vidéos dans le classement global',
-  'Chaînes dans le classement' => 'Chaînes dans le classement',
-  'Chaînes prioritaires' => 'Chaînes prioritaires',
-  'Vidéos dans le catalogue permanent' => 'Vidéos dans le catalogue permanent',
-  'Vidéos épinglées' => 'Vidéos épinglées',
-  'Voir toutes les statistiques' => 'Voir toutes les statistiques',
-  'Pages publiques' => 'Pages publiques',
-  'Catalogue vidéo' => 'Catalogue vidéo',
-  'Classement global des vidéos' => 'Classement global des vidéos',
-  'Classement des chaînes' => 'Classement des chaînes',
-  'Le jeton de sécurité a expiré. Veuillez recommencer.' => 'Le jeton de sécurité a expiré. Veuillez recommencer.',
-  'La clé YouTube Data API a été enregistrée.' => 'La clé YouTube Data API a été enregistrée.',
-  'La clé API est invalide.' => 'La clé API est invalide.',
-  'La requête de test est invalide.' => 'La requête de test est invalide.',
-  'La recherche de test a échoué.' => 'La recherche de test a échoué.',
-  ' vidéo(s) valide(s) trouvée(s).' => ' vidéo(s) valide(s) trouvée(s).',
-  'La requête d’amorçage est invalide.' => 'La requête d’amorçage est invalide.',
-  ' vidéo(s) ajoutée(s) au réservoir.' => ' vidéo(s) ajoutée(s) au réservoir.',
-  'L’amorçage du réservoir a échoué.' => 'L’amorçage du réservoir a échoué.',
-  ' entrée(s) de cache supprimée(s).' => ' entrée(s) de cache supprimée(s).',
-  'Nettoyage partiel : ' => 'Nettoyage partiel : ',
-  ' supprimée(s), ' => ' supprimée(s), ',
-  ' échec(s).' => ' échec(s).',
-  'La reconstruction des classements a échoué.' => 'La reconstruction des classements a échoué.',
-  'Classements reconstruits : ' => 'Classements reconstruits : ',
-  ' vidéo(s) classée(s).' => ' vidéo(s) classée(s).',
-  'La reconstruction du catalogue permanent a échoué.' => 'La reconstruction du catalogue permanent a échoué.',
-  'Le catalogue permanent a été reconstruit.' => 'Le catalogue permanent a été reconstruit.',
-  'ID ou URL YouTube invalide.' => 'ID ou URL YouTube invalide.',
-  'La vidéo est introuvable, privée, non intégrable ou refusée par la politique du plugin.' => 'La vidéo est introuvable, privée, non intégrable ou refusée par la politique du plugin.',
-  'Cette vidéo est actuellement bloquée par la modération.' => 'Cette vidéo est actuellement bloquée par la modération.',
-  'Vidéo ajoutée au catalogue permanent et signalée aux consommateurs Geeklog.' => 'Vidéo ajoutée au catalogue permanent et signalée aux consommateurs Geeklog.',
-  'Impossible d’ajouter la vidéo au catalogue permanent.' => 'Impossible d’ajouter la vidéo au catalogue permanent.',
-  'Décision éditoriale enregistrée.' => 'Décision éditoriale enregistrée.',
-  'Impossible d’enregistrer cette décision.' => 'Impossible d’enregistrer cette décision.',
-  'Décision de chaîne invalide.' => 'Décision de chaîne invalide.',
-  'Décision éditoriale depuis la page Actions Videos' => 'Décision éditoriale depuis la page Actions Videos',
-  'Décision sur la chaîne enregistrée.' => 'Décision sur la chaîne enregistrée.',
-  'Impossible de modifier la chaîne.' => 'Impossible de modifier la chaîne.',
-  'Aucune URL publique Videos à signaler.' => 'Aucune URL publique Videos à signaler.',
-  'Le batch IndexNow n’a pas pu être envoyé.' => 'Le batch IndexNow n’a pas pu être envoyé.',
-  ' URL(s) Videos envoyée(s) à IndexNow en un seul batch.' => ' URL(s) Videos envoyée(s) à IndexNow en un seul batch.',
-  'Le plugin IndexNow n’est pas disponible. Aucune fausse création de contenu n’a été émise.' => 'Le plugin IndexNow n’est pas disponible. Aucune fausse création de contenu n’a été émise.',
-  'Videos — Actions' => 'Videos — Actions',
-  'Curation vidéo' => 'Curation vidéo',
-  'Ajoutez directement une vidéo par son ID ou son URL YouTube. Elle est récupérée, mise en cache, ajoutée au catalogue permanent puis signalée via les événements Geeklog.' => 'Ajoutez directement une vidéo par son ID ou son URL YouTube. Elle est récupérée, mise en cache, ajoutée au catalogue permanent puis signalée via les événements Geeklog.',
-  'ID ou URL YouTube' => 'ID ou URL YouTube',
-  ' ou https://youtu.be/…' => ' ou https://youtu.be/…',
-  'Ajouter au catalogue permanent' => 'Ajouter au catalogue permanent',
-  'Catalogue permanent' => 'Catalogue permanent',
-  'Aucune vidéo conservée.' => 'Aucune vidéo conservée.',
-  'Vidéo' => 'Vidéo',
-  'État' => 'État',
-  'Épinglée' => 'Épinglée',
-  'Permanente' => 'Permanente',
-  'Désépingler' => 'Désépingler',
-  'Épingler' => 'Épingler',
-  'Retirer du permanent' => 'Retirer du permanent',
-  'Exclure du fonds' => 'Exclure du fonds',
-  'Vidéos exclues du fonds' => 'Vidéos exclues du fonds',
-  'Réautoriser' => 'Réautoriser',
-  'Reconstruire le catalogue permanent' => 'Reconstruire le catalogue permanent',
-  'Décisions sur les chaînes' => 'Décisions sur les chaînes',
-  'Aucune chaîne prioritaire.' => 'Aucune chaîne prioritaire.',
-  'ID chaîne' => 'ID chaîne',
-  'Décision' => 'Décision',
-  'Prioritaire' => 'Prioritaire',
-  'Autorisée' => 'Autorisée',
-  'Neutre' => 'Neutre',
-  'Bloquée' => 'Bloquée',
-  'Désactivée' => 'Désactivée',
-  'Appliquer' => 'Appliquer',
-  'Nouvelle clé API' => 'Nouvelle clé API',
-  'Enregistrer la clé' => 'Enregistrer la clé',
-  'Recherche de test' => 'Recherche de test',
-  'Tester la recherche' => 'Tester la recherche',
-  'Requête d’amorçage' => 'Requête d’amorçage',
-  'Amorcer le réservoir' => 'Amorcer le réservoir',
-  'Maintenance' => 'Maintenance',
-  'Reconstruire les classements' => 'Reconstruire les classements',
-  'Recherches' => 'Recherches',
-  'Vidéos' => 'Vidéos',
-  'Chaînes' => 'Chaînes',
-  'Disponibilité' => 'Disponibilité',
-  'Tous' => 'Tous',
-  'Vider le cache' => 'Vider le cache',
-  'Outils de réparation' => 'Outils de réparation',
-  'Indexation des pages existantes' => 'Indexation des pages existantes',
-  'Le rattrapage inventorie les pages publiques puis utilise le mode batch d’IndexNow. Il ne génère pas de faux événements de création pour Hello ou les autres plugins.' => 'Le rattrapage inventorie les pages publiques puis utilise le mode batch d’IndexNow. Il ne génère pas de faux événements de création pour Hello ou les autres plugins.',
-  'Envoyer les pages existantes à IndexNow' => 'Envoyer les pages existantes à IndexNow',
-  'Videos — Statistiques' => 'Videos — Statistiques',
-  'Contenu public et éditorial' => 'Contenu public et éditorial',
-  'Corpus de découverte local' => 'Corpus de découverte local',
-  'Vidéos recherchables' => 'Vidéos recherchables',
-  'Corpus public utilisé par Geeklog et le catalogue' => 'Corpus public utilisé par Geeklog et le catalogue',
-  'Classement global' => 'Classement global',
-  'Vidéos ayant des signaux locaux' => 'Vidéos ayant des signaux locaux',
-  'Chaînes classées' => 'Chaînes classées',
-  'Chaînes issues du classement local' => 'Chaînes issues du classement local',
-  'Décisions éditoriales actives' => 'Décisions éditoriales actives',
-  'Vidéos conservées durablement' => 'Vidéos conservées durablement',
-  'Sélections fortes, y compris les anciens épinglages 0.17' => 'Sélections fortes, y compris les anciens épinglages 0.17',
-  'Exclues du fonds' => 'Exclues du fonds',
-  'Exclusions éditoriales explicites' => 'Exclusions éditoriales explicites',
-  'Activité YouTube API' => 'Activité YouTube API',
-  'Recherches aujourd’hui' => 'Recherches aujourd’hui',
-  'Appels search.list' => 'Appels search.list',
-  'Appels vidéos' => 'Appels vidéos',
-  'Détails videos.list' => 'Détails videos.list',
-  'Appels chaînes' => 'Appels chaînes',
-  'Détails channels.list' => 'Détails channels.list',
-  'Quota suspendu' => 'Quota suspendu',
-  'Protection locale du quota' => 'Protection locale du quota',
-  'Dernier succès' => 'Dernier succès',
-  'Dernière réponse API valide' => 'Dernière réponse API valide',
-  'Résultats de recherche' => 'Résultats de recherche',
-  'Informations des vidéos' => 'Informations des vidéos',
-  'Informations des chaînes' => 'Informations des chaînes',
-  'Vérifications de disponibilité' => 'Vérifications de disponibilité',
-  'Entrées' => 'Entrées',
-  'Volume' => 'Volume',
-  'Entrée la plus récente' => 'Entrée la plus récente',
-  'Intégration Geeklog' => 'Intégration Geeklog',
-  'Recherche native' => 'Recherche native',
-  'Active via ' => 'Active via ',
-  'Statistiques natives' => 'Statistiques natives',
-  'Recherche publique' => 'Recherche publique',
-  'Le même corpus local est réutilisé sur le catalogue, sans appel YouTube supplémentaire.' => 'Le même corpus local est réutilisé sur le catalogue, sans appel YouTube supplémentaire.',
-  'Diagnostic SEO' => 'Diagnostic SEO',
-  'Prévisualisation des balises produites pour la première vidéo du classement global.' => 'Prévisualisation des balises produites pour la première vidéo du classement global.',
-  'Vidéo test' => 'Vidéo test',
-  'Aucune vidéo disponible pour le diagnostic SEO.' => 'Aucune vidéo disponible pour le diagnostic SEO.',
-  'Pages publiques adressables' => 'Pages publiques adressables',
-  'Catalogue' => 'Catalogue',
-  'Les vidéos permanentes et les chaînes éligibles possèdent également leur propre URL canonique.' => 'Les vidéos permanentes et les chaînes éligibles possèdent également leur propre URL canonique.',
-  'Jamais' => 'Jamais',
-);
 
 $LANG_VIDEOS_FAQ = array(
     'catalogue_selection_q' => 'Comment les vidéos du catalogue sont-elles sélectionnées ?',
@@ -668,3 +568,167 @@ $LANG_configselects['videos'] = array(
         'Toutes les vidéos sous le seuil (strict)' => 'strict'
     )
 );
+
+// Videos 0.19.0 semantic administration strings
+$LANG_VIDEOS['admin_explicit_editorial_exclusions'] = 'Exclusions éditoriales explicites';
+$LANG_VIDEOS['admin_youtube_data_api_key_has_been_saved'] = 'La clé YouTube Data API a été enregistrée.';
+$LANG_VIDEOS['admin_videos_list_details'] = 'Détails videos.list';
+$LANG_VIDEOS['admin_video_seo'] = 'SEO vidéo : ';
+$LANG_VIDEOS['admin_editorial_decision_saved'] = 'Décision éditoriale enregistrée.';
+$LANG_VIDEOS['admin_all_statistics'] = 'Toutes les statistiques';
+$LANG_VIDEOS['admin_local_video_corpus_available_native_search'] = 'Le corpus vidéo local est disponible dans la recherche native.';
+$LANG_VIDEOS['admin_public_pages'] = 'Pages publiques :';
+$LANG_VIDEOS['admin_availability'] = 'Disponibilité';
+$LANG_VIDEOS['admin_partial_cleanup'] = 'Nettoyage partiel : ';
+$LANG_VIDEOS['admin_send_existing_pages_indexnow'] = 'Envoyer les pages existantes à IndexNow';
+$LANG_VIDEOS['admin_pinned'] = 'Épinglée';
+$LANG_VIDEOS['admin_video_curation'] = 'Curation vidéo';
+$LANG_VIDEOS['admin_channel_information'] = 'Informations des chaînes';
+$LANG_VIDEOS['admin_last_success'] = 'Dernier succès';
+$LANG_VIDEOS['admin_priority_channels'] = 'Chaînes prioritaires';
+$LANG_VIDEOS['admin_last_api_error'] = 'Dernière erreur API';
+$LANG_VIDEOS['admin_videos_retained_permanently'] = 'Vidéos conservées durablement';
+$LANG_VIDEOS['admin_video_added_permanent_catalogue'] = 'Vidéo ajoutée au catalogue permanent.';
+$LANG_VIDEOS['admin_at_glance'] = 'Repères';
+$LANG_VIDEOS['admin_iteminfo_interoperability'] = 'Interopérabilité ItemInfo';
+$LANG_VIDEOS['admin_catalogue_search'] = 'Recherche du catalogue';
+$LANG_VIDEOS['admin_geeklog_search'] = 'Recherche Geeklog';
+$LANG_VIDEOS['admin_add_permanent_catalogue'] = 'Ajouter au catalogue permanent';
+$LANG_VIDEOS['admin_geeklog_integration'] = 'Intégration Geeklog';
+$LANG_VIDEOS['admin_quota_suspended'] = 'Quota suspendu';
+$LANG_VIDEOS['admin_video_s_added_reservoir'] = ' vidéo(s) ajoutée(s) au réservoir.';
+$LANG_VIDEOS['admin_youtube_quota_suspended'] = 'Le quota YouTube est suspendu (';
+$LANG_VIDEOS['admin_local_search_limit'] = 'Limite locale recherches';
+$LANG_VIDEOS['admin_last_search'] = 'Dernière recherche';
+$LANG_VIDEOS['admin_https_youtu_be'] = ' ou https://youtu.be/…';
+$LANG_VIDEOS['admin_video'] = 'Vidéo';
+$LANG_VIDEOS['admin_youtube_id_url'] = 'ID ou URL YouTube';
+$LANG_VIDEOS['admin_public_corpus_used_by_geeklog_catalogue'] = 'Corpus public utilisé par Geeklog et le catalogue';
+$LANG_VIDEOS['admin_permanent_catalogue'] = 'Catalogue permanent';
+$LANG_VIDEOS['admin_index_existing_pages'] = 'Indexation des pages existantes';
+$LANG_VIDEOS['admin_test_search'] = 'Recherche de test';
+$LANG_VIDEOS['admin_size'] = 'Volume';
+$LANG_VIDEOS['admin_open_repair_tools'] = 'Ouvrir les outils de réparation';
+$LANG_VIDEOS['admin_ranking_rebuild_failed'] = 'La reconstruction des classements a échoué.';
+$LANG_VIDEOS['admin_seed_reservoir'] = 'Amorcer le réservoir';
+$LANG_VIDEOS['admin_last_youtube_error'] = 'Dernière erreur YouTube : ';
+$LANG_VIDEOS['admin_video_catalogue_status_quick_actions_geeklog_integrati'] = 'État du catalogue vidéo, accès rapides et intégrations Geeklog.';
+$LANG_VIDEOS['admin_cache_entrie_s_deleted'] = ' entrée(s) de cache supprimée(s).';
+$LANG_VIDEOS['admin_pinned_videos'] = 'Vidéos épinglées';
+$LANG_VIDEOS['admin_last_rejected_call'] = 'Dernier appel refusé :';
+$LANG_VIDEOS['admin_availability_checks'] = 'Vérifications de disponibilité';
+$LANG_VIDEOS['admin_permanent'] = 'Permanente';
+$LANG_VIDEOS['admin_last_valid_api_response'] = 'Dernière réponse API valide';
+$LANG_VIDEOS['admin_videos_with_local_signals'] = 'Vidéos ayant des signaux locaux';
+$LANG_VIDEOS['admin_local_youtube_search_limit_has_been_reached'] = 'La limite locale de recherches YouTube est atteinte (';
+$LANG_VIDEOS['admin_youtube_data_api_key_required_search_new'] = 'Une clé YouTube Data API est nécessaire pour rechercher de nouvelles vidéos et récupérer les données d’une vidéo qui n’est pas encore en cache. Les vidéos déjà mises en cache restent consultables sans nouvel appel API.';
+$LANG_VIDEOS['admin_integrations'] = 'Intégrations';
+$LANG_VIDEOS['admin_videos_excluded_from_pool'] = 'Vidéos exclues du fonds';
+$LANG_VIDEOS['admin_rebuild_rankings'] = 'Reconstruire les classements';
+$LANG_VIDEOS['admin_public_editorial_content'] = 'Contenu public et éditorial';
+$LANG_VIDEOS['admin_search_results'] = 'Résultats de recherche';
+$LANG_VIDEOS['admin_active'] = 'Active';
+$LANG_VIDEOS['admin_never'] = 'Jamais';
+$LANG_VIDEOS['admin_test_search_8cfd'] = 'Tester la recherche';
+$LANG_VIDEOS['admin_videos_plugin_storage_unavailable_use_repair_tools'] = 'Le stockage du plugin Videos est indisponible. Consultez les outils de réparation.';
+$LANG_VIDEOS['admin_videos_reservoir'] = 'Vidéos dans le réservoir';
+$LANG_VIDEOS['admin_catalogue'] = 'Catalogue';
+$LANG_VIDEOS['admin_videos_public_pages'] = 'Pages publiques Videos';
+$LANG_VIDEOS['admin_seed_query'] = 'Requête d’amorçage';
+$LANG_VIDEOS['admin_no_video_available_seo_diagnostics'] = 'Aucune vidéo disponible pour le diagnostic SEO.';
+$LANG_VIDEOS['admin_video_calls'] = 'Appels vidéos';
+$LANG_VIDEOS['admin_api_key_invalid'] = 'La clé API est invalide.';
+$LANG_VIDEOS['admin_technical_diagnostics'] = 'Diagnostic technique';
+$LANG_VIDEOS['admin_compatible'] = 'Compatible';
+$LANG_VIDEOS['admin_youtube_api_activity'] = 'Activité YouTube API';
+$LANG_VIDEOS['admin_videos_url_s_sent_indexnow_one_batch'] = ' URL(s) Videos envoyée(s) à IndexNow en un seul batch.';
+$LANG_VIDEOS['admin_searches_today'] = 'Recherches aujourd’hui';
+$LANG_VIDEOS['admin_video_currently_blocked_by_moderation'] = 'Cette vidéo est actuellement bloquée par la modération.';
+$LANG_VIDEOS['admin_unpin'] = 'Désépingler';
+$LANG_VIDEOS['admin_deleted'] = ' supprimée(s), ';
+$LANG_VIDEOS['admin_exclude_from_future_selections'] = 'Exclure des sélections futures';
+$LANG_VIDEOS['admin_video_information'] = 'Informations des vidéos';
+$LANG_VIDEOS['admin_ranked_videos'] = 'Vidéos classées';
+$LANG_VIDEOS['admin_limit_reached'] = 'Limite atteinte (';
+$LANG_VIDEOS['admin_status'] = 'État :';
+$LANG_VIDEOS['admin_add_video'] = 'Ajouter une vidéo';
+$LANG_VIDEOS['admin_configuration'] = 'Configuration';
+$LANG_VIDEOS['admin_video_unavailable_private_not_embeddable_rejected_by'] = 'La vidéo est introuvable, privée, non intégrable ou refusée par la politique du plugin.';
+$LANG_VIDEOS['admin_replace_api_key'] = 'Remplacer la clé API';
+$LANG_VIDEOS['admin_last_authorized_search_list_reservation'] = 'Dernière réservation search.list autorisée';
+$LANG_VIDEOS['admin_test_search_failed'] = 'La recherche de test a échoué.';
+$LANG_VIDEOS['admin_unavailable'] = 'Indisponible';
+$LANG_VIDEOS['admin_search_list_calls'] = 'Appels search.list';
+$LANG_VIDEOS['admin_strong_selections_including_legacy_0_17_pins'] = 'Sélections fortes, y compris les anciens épinglages 0.17';
+$LANG_VIDEOS['admin_searches'] = 'Recherches';
+$LANG_VIDEOS['admin_syndication'] = 'Syndication';
+$LANG_VIDEOS['admin_test_query_invalid'] = 'La requête de test est invalide.';
+$LANG_VIDEOS['admin_catch_up_process_inventories_public_pages_sends'] = 'Le rattrapage inventorie les pages publiques et les envoie à IndexNow en mode batch.';
+$LANG_VIDEOS['admin_channel_calls'] = 'Appels chaînes';
+$LANG_VIDEOS['admin_developer_information'] = 'Informations développeur';
+$LANG_VIDEOS['admin_invalid_youtube_id_url'] = 'ID ou URL YouTube invalide.';
+$LANG_VIDEOS['admin_channels'] = 'Chaînes';
+$LANG_VIDEOS['admin_rebuild_permanent_catalogue'] = 'Reconstruire le catalogue permanent';
+$LANG_VIDEOS['admin_failure_s'] = ' échec(s).';
+$LANG_VIDEOS['admin_persistent_public_content_exposed_through_geeklog_item'] = 'Les contenus publics persistants sont exposés via l’API ItemInfo de Geeklog.';
+$LANG_VIDEOS['admin_maintenance'] = 'Maintenance';
+$LANG_VIDEOS['admin_no_public_videos_url_submit'] = 'Aucune URL publique Videos à signaler.';
+$LANG_VIDEOS['admin_needs_review'] = 'À vérifier';
+$LANG_VIDEOS['admin_channel_ranking'] = 'Classement chaînes';
+$LANG_VIDEOS['admin_pin'] = 'Épingler';
+$LANG_VIDEOS['admin_add_api_key'] = 'Ajouter une clé API';
+$LANG_VIDEOS['admin_allow_again'] = 'Réautoriser';
+$LANG_VIDEOS['admin_api_key_missing'] = 'Clé API absente.';
+$LANG_VIDEOS['admin_none'] = 'Aucune';
+$LANG_VIDEOS['admin_test_video'] = 'Vidéo test';
+$LANG_VIDEOS['admin_replace_key'] = 'Remplacer la clé';
+$LANG_VIDEOS['admin_suspension_after_quota_error_reported_by_youtube'] = 'Suspension après une erreur de quota signalée par YouTube';
+$LANG_VIDEOS['admin_active_d2f1'] = 'Active';
+$LANG_VIDEOS['admin_view_catalogue'] = 'Voir le catalogue';
+$LANG_VIDEOS['admin_videos_plugin_storage_unavailable'] = 'Le stockage du plugin Videos est indisponible.';
+$LANG_VIDEOS['admin_searchable_videos'] = 'Vidéos recherchables';
+$LANG_VIDEOS['admin_video_seo_c7b7'] = 'SEO vidéo';
+$LANG_VIDEOS['admin_complete'] = 'À compléter';
+$LANG_VIDEOS['admin_global_ranking'] = 'Classement global';
+$LANG_VIDEOS['admin_active_editorial_decisions'] = 'Décisions éditoriales actives';
+$LANG_VIDEOS['admin_all'] = 'Tous';
+$LANG_VIDEOS['admin_seed_query_invalid'] = 'La requête d’amorçage est invalide.';
+$LANG_VIDEOS['admin_ranked_channels'] = 'Chaînes classées';
+$LANG_VIDEOS['admin_available'] = 'Disponible';
+$LANG_VIDEOS['admin_local_discovery_corpus'] = 'Corpus de découverte local';
+$LANG_VIDEOS['admin_reservoir_seeding_failed'] = 'L’amorçage du réservoir a échoué.';
+$LANG_VIDEOS['admin_indexnow_plugin_unavailable_no_fake_content_creation'] = 'Le plugin IndexNow n’est pas disponible. Aucune fausse création de contenu n’a été émise.';
+$LANG_VIDEOS['admin_channels_list_details'] = 'Détails channels.list';
+$LANG_VIDEOS['admin_repair_tools'] = 'Outils de réparation';
+$LANG_VIDEOS['admin_rankings_rebuilt'] = 'Classements reconstruits : ';
+$LANG_VIDEOS['admin_permanent_catalogue_rebuild_failed'] = 'La reconstruction du catalogue permanent a échoué.';
+$LANG_VIDEOS['admin_api_key_configured'] = 'Clé API configurée.';
+$LANG_VIDEOS['admin_no_retained_video'] = 'Aucune vidéo conservée.';
+$LANG_VIDEOS['admin_status_db27'] = 'État';
+$LANG_VIDEOS['admin_xml_sitemap'] = 'XML Sitemap';
+$LANG_VIDEOS['admin_channels_from_local_ranking'] = 'Chaînes issues du classement local';
+$LANG_VIDEOS['admin_unable_add_video_permanent_catalogue'] = 'Impossible d’ajouter la vidéo au catalogue permanent.';
+$LANG_VIDEOS['admin_clear_cache'] = 'Vider le cache';
+$LANG_VIDEOS['admin_remove_from_selection'] = 'Retirer de la sélection';
+$LANG_VIDEOS['admin_video_ranking'] = 'Classement vidéos';
+$LANG_VIDEOS['admin_ranked_video_s'] = ' vidéo(s) classée(s).';
+$LANG_VIDEOS['admin_today'] = ' aujourd’hui).';
+$LANG_VIDEOS['admin_rss_atom_feeds_through_geeklog_native_syndication'] = 'Flux RSS/Atom via le moteur de syndication natif de Geeklog.';
+$LANG_VIDEOS['admin_security_token_has_expired_please_try_again'] = 'Le jeton de sécurité a expiré. Veuillez recommencer.';
+$LANG_VIDEOS['admin_add_video_directly_by_its_youtube_id'] = 'Ajoutez directement une vidéo par son ID ou son URL YouTube. Elle est récupérée, mise en cache, ajoutée au catalogue permanent puis signalée via les événements Geeklog.';
+$LANG_VIDEOS['admin_save_key'] = 'Enregistrer la clé';
+$LANG_VIDEOS['admin_videos'] = 'Vidéos';
+$LANG_VIDEOS['admin_see_statistics_youtube_api_activity_diagnostics'] = 'Consultez Statistiques > Activité YouTube API pour le diagnostic.';
+$LANG_VIDEOS['admin_excluded_from_pool'] = 'Exclues du fonds';
+$LANG_VIDEOS['admin_active_1a31'] = 'Actives';
+$LANG_VIDEOS['admin_geeklog_statistics'] = 'Statistiques Geeklog';
+$LANG_VIDEOS['admin_valid_video_s_found'] = ' vidéo(s) valide(s) trouvée(s).';
+$LANG_VIDEOS['admin_entries'] = 'Entrées';
+$LANG_VIDEOS['admin_indexnow_batch_could_not_be_sent'] = 'Le batch IndexNow n’a pas pu être envoyé.';
+$LANG_VIDEOS['admin_unable_save_decision'] = 'Impossible d’enregistrer cette décision.';
+$LANG_VIDEOS['admin_permanent_catalogue_has_been_rebuilt'] = 'Le catalogue permanent a été reconstruit.';
+$LANG_VIDEOS['admin_latest_entry'] = 'Entrée la plus récente';
+$LANG_VIDEOS['admin_reservoir'] = 'Réservoir';
+$LANG_VIDEOS['admin_statistics'] = 'Statistiques';
+$LANG_VIDEOS['admin_daily_limit_configured_videos'] = 'Plafond quotidien configuré dans Videos';
+// End Videos 0.19.0 semantic administration strings

@@ -1,6 +1,6 @@
 # Videos plugin for Geeklog
 
-Development version: **0.18.0**
+Development version: **0.19.0**
 
 Videos is a Geeklog plugin that builds and maintains a public video catalogue from YouTube Data API v3 while keeping editorial control, local ratings, recommendations, moderation, SEO metadata and persistent JSON data on the Geeklog site.
 
@@ -12,11 +12,68 @@ Videos is a Geeklog plugin that builds and maintains a public video catalogue fr
 - No plugin-owned database table
 - Persistent plugin data stored outside Geeklog `path_data` since Videos 0.17.1
 
-## Videos 0.18.0
+## Videos 0.19.0
 
-The 0.18.0 branch extends the plugin around three major areas: editorial curation, SEO and Geeklog interoperability.
+Videos 0.19.0 consolidates the public catalogue, administration, Geeklog interoperability and packaging work introduced in 0.18.0, and improves presentation and asset loading.
 
-### Editorial curation
+### Conditional CSS loading
+
+The plugin now separates its styles according to where they are actually needed:
+
+- `videos.css` is loaded only on public `/videos/` pages;
+- `autotag.css` is loaded only when a valid `[videos:...]` autotag is rendered;
+- `block.css` is loaded only when the Videos dynamic block produces content;
+- `admin.css` is loaded only in `/admin/plugins/videos/`.
+
+This keeps normal Geeklog pages lighter and avoids loading the full Videos stylesheet when the plugin is not displayed.
+
+### Video thumbnails and play affordance
+
+Video thumbnails now use a centered play icon inspired by familiar video interfaces. The overlay is generated with CSS and does not require an additional image asset.
+
+The play affordance is used on relevant catalogue, autotag, block, ranking and history thumbnails, with hover/focus feedback to make playable content easier to identify.
+
+### Administration layout
+
+The main Videos administration overview now follows the standard Geeklog administration presentation using `block-center`, `block-title` and `block-content` containers.
+
+Administration remains separated into focused areas:
+
+- **Overview** for the general state of the plugin;
+- **Actions** for curation, YouTube API operations, discovery, maintenance and indexing actions;
+- **Statistics** for reservoir, rankings, permanent catalogue, quota, cache and SEO diagnostics;
+- **Moderation** for video and channel decisions.
+
+### Installable archive
+
+The `0.19.0` branch includes a GitHub Actions workflow that builds the installable archive:
+
+```text
+videos_0.19.0_2.1.1.zip
+```
+
+The generated archive is stored under `dist/` and is validated before being committed. The workflow:
+
+- runs PHP syntax checks;
+- builds the standard `videos/` plugin directory inside the ZIP;
+- verifies ZIP integrity;
+- verifies the required CSS files are included;
+- rejects unsafe archive filenames;
+- keeps the package compatible with Geeklog installation requirements.
+
+### Upgrade path
+
+Videos 0.19.0 supports upgrades from 0.17.1 through the explicit migration chain:
+
+```text
+0.17.1 -> 0.18.0 -> 0.19.0
+```
+
+The 0.18.0 to 0.19.0 step does not require an SQL or configuration migration because 0.19.0 changes PHP/CSS integration and packaging only.
+
+Earlier migration steps remain available in `install_updates.php`, allowing Geeklog to follow the complete supported upgrade chain.
+
+## Editorial curation
 
 Videos can operate as an automated discovery engine while also giving administrators direct editorial control over the catalogue.
 
@@ -34,18 +91,7 @@ Administrators can:
 
 Adding a video manually retrieves its YouTube metadata, verifies that it is public and embeddable, applies the active video policy, stores the result in the local cache and adds the video to the permanent catalogue.
 
-### Administration
-
-Administration is separated into focused areas:
-
-- **Overview** for the general state of the plugin;
-- **Actions** for curation, YouTube API operations, discovery, maintenance and indexing actions;
-- **Statistics** for reservoir, rankings, permanent catalogue, quota, cache and SEO diagnostics;
-- **Moderation** for video and channel decisions.
-
-This keeps editorial actions separate from technical and statistical information.
-
-### Public catalogue
+## Public catalogue
 
 Videos maintains a paginated public catalogue backed by a bounded discovery reservoir and local ranking signals.
 
@@ -64,7 +110,7 @@ The catalogue can combine:
 
 Blocked, disabled, unavailable and policy-excluded content is filtered before display.
 
-### Permanent catalogue
+## Permanent catalogue
 
 The permanent catalogue gives selected videos a durable local presence independent of normal discovery rotation.
 
@@ -79,29 +125,15 @@ A video may be:
 
 Permanent and pinned decisions can generate Geeklog lifecycle signals for compatible consumer plugins.
 
-### Global video ranking
+## Rankings and channel pages
 
-Videos maintains a bounded local ranking of remarkable videos using local engagement data already collected by the plugin.
+Videos maintains bounded local rankings for videos and channels using local engagement data already collected by the plugin.
 
-The score combines Bayesian rating, rating confidence, qualified views, watch ratio, activity recency and publication recency. Rebuilding a ranking does not require an additional YouTube API search.
+The video score can combine Bayesian rating, rating confidence, qualified views, watch ratio, activity recency and publication recency. Channel rankings are derived from the ranked video corpus without requiring an additional YouTube API search.
 
-Changes to the visible ranking can signal the corresponding public ranking page without generating events when the public order has not changed.
+Eligible remarkable or priority channels can have their own local public page containing notable videos from that channel.
 
-### Channel ranking and local channel pages
-
-Videos derives a local channel ranking from the ranked video corpus.
-
-Eligible remarkable or priority channels can have their own local public page containing notable videos from that channel. The public channel ranking links to these local pages, creating stronger internal navigation between:
-
-- the video catalogue;
-- video rankings;
-- channel rankings;
-- channel pages;
-- individual video pages.
-
-Channel priority and moderation decisions can also update the affected public identities.
-
-### Recommendations
+## Recommendations
 
 Next-video recommendations use the originating search context when available and fall back to the local global ranking when necessary.
 
@@ -117,7 +149,7 @@ Recommendations respect:
 
 Suggestions do not trigger extra YouTube API calls merely because the page is rendered.
 
-### Local ratings and qualified views
+## Local ratings and qualified views
 
 Videos records local engagement without relying on YouTube view statistics as its primary recommendation signal.
 
@@ -130,7 +162,7 @@ The plugin supports:
 - registered-user viewing history;
 - deletion of personal ratings and account-linked plugin data where configured.
 
-### Moderation
+## Moderation
 
 Moderators can act on individual videos and channels.
 
@@ -138,7 +170,7 @@ Videos can block a video and classify channels as allowed, priority, blocked, di
 
 Quick editorial actions are also available from individual video pages for authorized administrators.
 
-### Geeklog block
+## Geeklog block
 
 The optional dynamic Geeklog block can display:
 
@@ -150,9 +182,9 @@ The optional dynamic Geeklog block can display:
 - best local channels;
 - a random choice among the available block modes.
 
-Video thumbnails use descriptive `alt` text and the block reads local rankings and cache data without requiring a YouTube API call during normal rendering.
+The block reads local rankings and cache data without requiring a YouTube API call during normal rendering.
 
-### SEO
+## SEO
 
 Videos generates server-side SEO metadata for its public pages.
 
@@ -172,7 +204,7 @@ Features include:
 
 Individual video pages prefer video-specific descriptions rather than reusing one global fallback description across many URLs.
 
-### Geeklog interoperability
+## Geeklog interoperability
 
 Videos exposes its public content through generic Geeklog-compatible identities so other plugins do not need to understand its JSON storage or YouTube implementation.
 
@@ -195,15 +227,7 @@ The plugin provides:
 
 This allows compatible plugins such as Hello, Hub or IndexNow to consume Videos content without Videos-specific SQL or routing logic.
 
-### IndexNow compatibility
-
-Meaningful editorial changes can be announced through normal Geeklog lifecycle events. Videos exposes deterministic canonical URLs so IndexNow can resolve the affected resource generically.
-
-Videos can also enumerate the public URLs already represented by its catalogue, global ranking, permanent catalogue, discovery reservoir and eligible channel pages for an initial indexing catch-up.
-
-Technical cache refreshes and unchanged ranking recalculations are deliberately not treated as new content publications.
-
-### Autotags
+## Autotags
 
 Videos provides its own autotag namespace to avoid collisions with other Geeklog plugins:
 
@@ -212,7 +236,9 @@ Videos provides its own autotag namespace to avoid collisions with other Geeklog
 [videos:VIDEO_ID player]
 ```
 
-The default form links to the local canonical Videos page. The `player` variant can render the embedded player while continuing to use the local cached metadata.
+The default form renders a thumbnail card linking to the local canonical Videos page. The `player` variant renders a responsive privacy-enhanced YouTube player while continuing to use local cached metadata.
+
+Autotag styles are loaded only when a valid Videos autotag is actually rendered.
 
 ## Persistent JSON storage
 
@@ -253,8 +279,18 @@ Relative paths, parent traversal and locations inside `path_data` are rejected. 
 - content interoperability and canonical URL resolution;
 - Videos autotags;
 - Hello-compatible content collections;
-- IndexNow-compatible lifecycle signaling.
+- IndexNow-compatible lifecycle signaling;
+- conditional front-end and administration CSS loading;
+- GitHub-generated installable distribution archive.
 
-## Historical release notes
+## Installation
 
-The detailed release history from earlier Videos versions through 0.17.1 is retained in the repository file [`README`](README).
+For Geeklog 2.1.1 and later, use the generated archive:
+
+```text
+dist/videos_0.19.0_2.1.1.zip
+```
+
+Install or upgrade it using Geeklog's plugin administration interface.
+
+Before any production upgrade, keep a backup of the Geeklog database, plugin files and the external Videos persistent-data directory.

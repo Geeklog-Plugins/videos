@@ -49,6 +49,8 @@ require_once $_CONF['path'] . 'plugins/videos/classes/Videos_Recommendation.php'
 require_once $_CONF['path'] . 'plugins/videos/classes/Videos_Description.php';
 require_once $_CONF['path'] . 'plugins/videos/classes/Videos_Seo.php';
 require_once $_CONF['path'] . 'plugins/videos/classes/Videos_Faq.php';
+require_once $_CONF['path'] . 'plugins/videos/geeklog_integration.php';
+require_once $_CONF['path'] . 'plugins/videos/interoperability.php';
 
 $_VIDEOS_CONF = array();
 if (class_exists('config')) {
@@ -219,6 +221,8 @@ function plugin_getBlocks_videos($side, $topic = '')
     if ($content === '') {
         return $blocks;
     }
+
+    $GLOBALS['_VIDEOS_NEEDS_BLOCK_CSS'] = true;
 
     $blocks[] = array(
         'name'           => 'videos_recommendations',
@@ -599,23 +603,124 @@ function VIDEOS_renderNavigation($active)
     return $html . '</ul></nav>';
 }
 
-function VIDEOS_localizeAdminText($text)
+function VIDEOS_adminNavigation($active)
 {
-    global $LANG_VIDEOS_ADMIN_TEXT;
-    if (!is_array($LANG_VIDEOS_ADMIN_TEXT) || $text === '') {
-        return $text;
+    global $_CONF, $LANG_VIDEOS;
+
+    $base = rtrim($_CONF['site_admin_url'], '/') . '/plugins/videos/';
+    $items = array(
+        'overview' => array('index.php', $LANG_VIDEOS['admin_nav_overview']),
+        'actions' => array('actions.php', $LANG_VIDEOS['admin_nav_actions']),
+        'stats' => array('stats.php', $LANG_VIDEOS['admin_nav_stats']),
+        'moderation' => array('moderation.php', $LANG_VIDEOS['admin_nav_moderation'])
+    );
+
+    $html = '<nav class="videos-navigation" aria-label="'
+        . htmlspecialchars($LANG_VIDEOS['admin_navigation'], ENT_QUOTES, 'UTF-8')
+        . '"><ul>';
+    foreach ($items as $key => $item) {
+        $html .= '<li><a href="'
+            . htmlspecialchars($base . $item[0], ENT_QUOTES, 'UTF-8') . '"'
+            . ($key === $active ? ' class="is-active" aria-current="page"' : '')
+            . '>' . htmlspecialchars($item[1], ENT_QUOTES, 'UTF-8') . '</a></li>';
     }
-    return strtr((string) $text, $LANG_VIDEOS_ADMIN_TEXT);
+
+    return $html . '</ul></nav>';
 }
+
+function VIDEOS_adminPageOpen($active, $pageTitle)
+{
+    global $LANG_VIDEOS;
+
+    return '<section class="block-center videos-admin">'
+        . '<div class="block-title">'
+        . htmlspecialchars($LANG_VIDEOS['admin_title'], ENT_QUOTES, 'UTF-8')
+        . '</div><div class="block-content">'
+        . VIDEOS_adminNavigation($active)
+        . '<header class="videos-admin-page-header"><h1>'
+        . htmlspecialchars($pageTitle, ENT_QUOTES, 'UTF-8')
+        . '</h1></header>';
+}
+
+function VIDEOS_adminPageClose()
+{
+    return '</div></section>';
+}
+
+function VIDEOS_stylesheetLink($file)
+{
+    global $_CONF;
+
+    $version = VIDEOS_PLUGIN_VERSION . '-' . (int) @filemtime(__FILE__);
+    $cssPath = '';
+
+    if (!empty($_CONF['path_html'])) {
+        $cssPath = rtrim($_CONF['path_html'], '/\\')
+            . '/videos/css/' . $file;
+    }
+
+    if ($cssPath === '' || !is_file($cssPath)) {
+        $cssPath = rtrim($_CONF['path'], '/\\')
+            . '/plugins/videos/public_html/css/' . $file;
+    }
+
+    if (is_file($cssPath)) {
+        clearstatcache(true, $cssPath);
+        $modified = @filemtime($cssPath);
+        if ($modified !== false && $modified > 0) {
+            $version .= '-' . (int) $modified;
+        }
+    }
+
+    return '<link rel="stylesheet" type="text/css" href="'
+        . htmlspecialchars(
+            rtrim($_CONF['site_url'], '/') . '/videos/css/' . $file,
+            ENT_QUOTES,
+            'UTF-8'
+        )
+        . '?v=' . rawurlencode($version) . '">' . "\n";
+}
+
 function plugin_getheadercode_videos()
 {
-    global $_CONF, $_VIDEOS_CONF;
+    global $_VIDEOS_CONF;
+
     if (isset($_VIDEOS_CONF['enabled']) && !$_VIDEOS_CONF['enabled']) {
         return '';
     }
-    return '<link rel="stylesheet" type="text/css" href="'
-        . htmlspecialchars($_CONF['site_url'] . '/videos/css/videos.css', ENT_QUOTES, 'UTF-8')
-        . '?v=' . rawurlencode(VIDEOS_PLUGIN_VERSION) . '">' . "\n";
+
+    $path = '';
+    if (!empty($_SERVER['REQUEST_URI'])) {
+        $parsedPath = parse_url((string) $_SERVER['REQUEST_URI'], PHP_URL_PATH);
+        $path = is_string($parsedPath) ? $parsedPath : '';
+    }
+    if ($path === '' && !empty($_SERVER['SCRIPT_NAME'])) {
+        $path = (string) $_SERVER['SCRIPT_NAME'];
+    }
+    $path = str_replace('\\', '/', $path);
+
+    $header = '';
+    $isAdmin = strpos($path, '/admin/plugins/videos/') !== false;
+    $isVideosConfig = strpos($path, '/admin/configuration.php') !== false
+        && isset($_GET['conf_group'])
+        && (string) $_GET['conf_group'] === 'videos';
+    $isPublicVideos = !$isAdmin && !$isVideosConfig
+        && strpos($path, '/videos/') !== false;
+
+    if ($isPublicVideos) {
+        $header .= VIDEOS_stylesheetLink('videos.css');
+    }
+    if ($isAdmin || $isVideosConfig) {
+        $header .= VIDEOS_stylesheetLink('admin.css');
+    }
+    if (!empty($GLOBALS['_VIDEOS_NEEDS_AUTOTAG_CSS'])) {
+        $header .= VIDEOS_stylesheetLink('autotag.css');
+    }
+    if (!empty($GLOBALS['_VIDEOS_NEEDS_BLOCK_CSS'])) {
+        $header .= VIDEOS_stylesheetLink('block.css');
+    }
+
+    return $header;
 }
 
 function VIDEOS_adminHeaderCode()

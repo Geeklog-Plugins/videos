@@ -97,10 +97,7 @@ $cache = new Videos_Cache($store);
 $knownChannels = $cache->listKnownChannels(500);
 $token = SEC_createToken();
 
-$html = '<div class="videos-admin"><h1>'
-    . htmlspecialchars($LANG_VIDEOS['moderation_title'], ENT_QUOTES, 'UTF-8')
-    . '</h1>'
-    . videos_moderation_nav($_CONF, 'moderation');
+$html = VIDEOS_adminPageOpen('moderation', $LANG_VIDEOS['admin_nav_moderation']);
 if ($message !== '') {
     $html .= COM_showMessageText($message, '', true);
 }
@@ -146,7 +143,7 @@ $html .= videos_moderation_table(
     $token,
     $LANG_VIDEOS
 );
-$html .= '</div>';
+$html .= VIDEOS_adminPageClose();
 
 echo COM_createHTMLDocument(
     $html,
@@ -155,26 +152,6 @@ echo COM_createHTMLDocument(
         'headercode' => VIDEOS_adminHeaderCode()
     )
 );
-
-function videos_moderation_nav($configuration, $active)
-{
-    global $LANG_VIDEOS;
-    $base = $configuration['site_admin_url'] . '/plugins/videos/';
-    $items = array(
-        'overview' => array('index.php', $LANG_VIDEOS['admin_nav_overview']),
-        'actions' => array('actions.php', $LANG_VIDEOS['admin_nav_actions']),
-        'stats' => array('stats.php', $LANG_VIDEOS['admin_nav_stats']),
-        'moderation' => array('moderation.php', $LANG_VIDEOS['admin_nav_moderation'])
-    );
-    $html = '<nav class="videos-navigation" aria-label="' . htmlspecialchars($LANG_VIDEOS['admin_navigation'], ENT_QUOTES, 'UTF-8') . '"><ul>';
-    foreach ($items as $key => $item) {
-        $html .= '<li><a href="'
-            . htmlspecialchars($base . $item[0], ENT_QUOTES, 'UTF-8') . '"'
-            . ($key === $active ? ' class="is-active" aria-current="page"' : '')
-            . '>' . htmlspecialchars($item[1], ENT_QUOTES, 'UTF-8') . '</a></li>';
-    }
-    return $html . '</ul></nav>';
-}
 
 function videos_moderation_form(
     $entity,

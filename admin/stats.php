@@ -16,10 +16,10 @@ if (!SEC_hasRights('videos.admin')) {
 $bootstrap = new Videos_Bootstrap($_CONF);
 if (!$bootstrap->isReady()) {
     echo COM_createHTMLDocument(
-        COM_showMessageText(VIDEOS_localizeAdminText('Le stockage du plugin Videos est indisponible.'), '', true),
+        COM_showMessageText($LANG_VIDEOS['admin_videos_plugin_storage_unavailable'], '', true),
         array(
-            'pagetitle' => VIDEOS_localizeAdminText('Videos — Statistiques'),
-            'headercode' => videos_stats_header_code()
+            'pagetitle' => $LANG_VIDEOS['admin_title'],
+            'headercode' => VIDEOS_adminHeaderCode()
         )
     );
     exit;
@@ -37,12 +37,12 @@ $searchLimit = isset($_VIDEOS_CONF['youtube_daily_search_limit'])
     ? max(0, (int) $_VIDEOS_CONF['youtube_daily_search_limit']) : 20;
 $searchCount = isset($counts['search']) ? (int) $counts['search'] : 0;
 $localSearchState = ($searchLimit > 0 && $searchCount >= $searchLimit)
-    ? 'Limite atteinte (' . $searchCount . '/' . $searchLimit . ')'
+    ? $LANG_VIDEOS['admin_limit_reached'] . $searchCount . '/' . $searchLimit . ')'
     : $searchCount . '/' . ($searchLimit > 0 ? $searchLimit : '∞');
 $lastApiError = !empty($quotaData['last_error']['code'])
-    ? (string) $quotaData['last_error']['code'] : 'Aucune';
+    ? (string) $quotaData['last_error']['code'] : $LANG_VIDEOS['admin_none'];
 $lastApiErrorAt = !empty($quotaData['last_error']['at'])
-    ? videos_stats_date_text($quotaData['last_error']['at']) : 'Jamais';
+    ? videos_stats_date_text($quotaData['last_error']['at']) : $LANG_VIDEOS['admin_never'];
 $lastRejection = isset($quotaData['last_rejection']) && is_array($quotaData['last_rejection'])
     ? $quotaData['last_rejection'] : array();
 $cacheStatus = (new Videos_CacheMaintenance($store))->inspect();
@@ -93,99 +93,98 @@ if (count($videoRanking) > 0) {
     }
 }
 
-$html = '<div class="videos-admin"><h1>Videos — Statistiques</h1>'
-    . videos_stats_nav($_CONF, 'stats')
-    . '<section class="videos-admin-section"><h2>Contenu public et éditorial</h2>'
+$html = VIDEOS_adminPageOpen('stats', $LANG_VIDEOS['admin_nav_stats'])
+    . '<section class="videos-admin-section"><h2>' . $LANG_VIDEOS['admin_public_editorial_content'] . '</h2>'
     . '<div class="videos-stat-grid">'
     . videos_stat_card(
-        'Vidéos dans le réservoir',
+        $LANG_VIDEOS['admin_videos_reservoir'],
         (int) $reservoirStatus['item_count'],
-        'Corpus de découverte local'
+        $LANG_VIDEOS['admin_local_discovery_corpus']
     )
     . videos_stat_card(
-        'Vidéos recherchables',
+        $LANG_VIDEOS['admin_searchable_videos'],
         $searchableCount,
-        'Corpus public utilisé par Geeklog et le catalogue'
+        $LANG_VIDEOS['admin_public_corpus_used_by_geeklog_catalogue']
     )
     . videos_stat_card(
-        'Classement global',
+        $LANG_VIDEOS['admin_global_ranking'],
         count($videoRanking),
-        'Vidéos ayant des signaux locaux'
+        $LANG_VIDEOS['admin_videos_with_local_signals']
     )
     . videos_stat_card(
-        'Chaînes classées',
+        $LANG_VIDEOS['admin_ranked_channels'],
         count($channelRanking),
-        'Chaînes issues du classement local'
+        $LANG_VIDEOS['admin_channels_from_local_ranking']
     )
     . videos_stat_card(
-        'Chaînes prioritaires',
+        $LANG_VIDEOS['admin_priority_channels'],
         count($priorityChannels),
-        'Décisions éditoriales actives'
+        $LANG_VIDEOS['admin_active_editorial_decisions']
     )
     . videos_stat_card(
-        'Catalogue permanent',
+        $LANG_VIDEOS['admin_permanent_catalogue'],
         (int) $poolStatus['item_count'],
-        'Vidéos conservées durablement'
+        $LANG_VIDEOS['admin_videos_retained_permanently']
     )
     . videos_stat_card(
-        'Vidéos épinglées',
+        $LANG_VIDEOS['admin_pinned_videos'],
         isset($poolStatus['pinned_count'])
             ? (int) $poolStatus['pinned_count'] : 0,
-        'Sélections fortes, y compris les anciens épinglages 0.17'
+        $LANG_VIDEOS['admin_strong_selections_including_legacy_0_17_pins']
     )
     . videos_stat_card(
-        'Exclues du fonds',
+        $LANG_VIDEOS['admin_excluded_from_pool'],
         (int) $poolStatus['excluded_count'],
-        'Exclusions éditoriales explicites'
+        $LANG_VIDEOS['admin_explicit_editorial_exclusions']
     )
     . '</div></section>';
 
-$html .= '<section class="videos-admin-section"><h2>Activité YouTube API</h2>'
+$html .= '<section class="videos-admin-section"><h2>' . $LANG_VIDEOS['admin_youtube_api_activity'] . '</h2>'
     . '<div class="videos-stat-grid videos-stat-grid-compact">'
     . videos_stat_card(
-        'Recherches aujourd’hui',
+        $LANG_VIDEOS['admin_searches_today'],
         isset($counts['search']) ? (int) $counts['search'] : 0,
-        'Appels search.list'
+        $LANG_VIDEOS['admin_search_list_calls']
     )
     . videos_stat_card(
-        'Appels vidéos',
+        $LANG_VIDEOS['admin_video_calls'],
         isset($counts['videos']) ? (int) $counts['videos'] : 0,
-        'Détails videos.list'
+        $LANG_VIDEOS['admin_videos_list_details']
     )
     . videos_stat_card(
-        'Appels chaînes',
+        $LANG_VIDEOS['admin_channel_calls'],
         isset($counts['channels']) ? (int) $counts['channels'] : 0,
-        'Détails channels.list'
+        $LANG_VIDEOS['admin_channels_list_details']
     )
     . videos_stat_card(
-        'Quota suspendu',
-        !empty($quotaData['suspended']) ? 'Oui' : 'Non',
-        'Suspension après une erreur de quota signalée par YouTube'
+        $LANG_VIDEOS['admin_quota_suspended'],
+        !empty($quotaData['suspended']) ? $LANG_VIDEOS['admin_yes'] : $LANG_VIDEOS['admin_no'],
+        $LANG_VIDEOS['admin_suspension_after_quota_error_reported_by_youtube']
     )
     . videos_stat_card(
-        'Limite locale recherches',
+        $LANG_VIDEOS['admin_local_search_limit'],
         $localSearchState,
-        'Plafond quotidien configuré dans Videos'
+        $LANG_VIDEOS['admin_daily_limit_configured_videos']
     )
     . videos_stat_card(
-        'Dernière recherche',
+        $LANG_VIDEOS['admin_last_search'],
         videos_stats_date_text(isset($quotaData['last_search_at']) ? $quotaData['last_search_at'] : null),
-        'Dernière réservation search.list autorisée',
+        $LANG_VIDEOS['admin_last_authorized_search_list_reservation'],
         true
     )
     . videos_stat_card(
-        'Dernière erreur API',
+        $LANG_VIDEOS['admin_last_api_error'],
         $lastApiError,
         $lastApiErrorAt,
         true
     )
     . videos_stat_card(
-        'Dernier succès',
+        $LANG_VIDEOS['admin_last_success'],
         videos_stats_date_text(
             isset($quotaData['last_success_at'])
                 ? $quotaData['last_success_at'] : null
         ),
-        'Dernière réponse API valide',
+        $LANG_VIDEOS['admin_last_valid_api_response'],
         true
     )
     . '</div>';
@@ -194,8 +193,8 @@ if (!empty($lastRejection)) {
     $method = isset($lastRejection['method']) ? (string) $lastRejection['method'] : '';
     $count = isset($lastRejection['count']) ? (int) $lastRejection['count'] : 0;
     $limit = isset($lastRejection['limit']) ? (int) $lastRejection['limit'] : 0;
-    $at = !empty($lastRejection['at']) ? videos_stats_date_text($lastRejection['at']) : 'Jamais';
-    $html .= '<p class="videos-admin-help"><strong>Dernier appel refusé :</strong> '
+    $at = !empty($lastRejection['at']) ? videos_stats_date_text($lastRejection['at']) : $LANG_VIDEOS['admin_never'];
+    $html .= '<p class="videos-admin-help"><strong>' . $LANG_VIDEOS['admin_last_rejected_call'] . '</strong> '
         . htmlspecialchars($method, ENT_QUOTES, 'UTF-8') . ' — '
         . htmlspecialchars($reason, ENT_QUOTES, 'UTF-8') . ' (' . $count . '/' . $limit . ') — '
         . htmlspecialchars($at, ENT_QUOTES, 'UTF-8') . '.</p>';
@@ -203,16 +202,16 @@ if (!empty($lastRejection)) {
 $html .= '</section>';
 
 $cacheLabels = array(
-    'search' => 'Résultats de recherche',
-    'videos' => 'Informations des vidéos',
-    'channels' => 'Informations des chaînes',
-    'availability' => 'Vérifications de disponibilité'
+    'search' => $LANG_VIDEOS['admin_search_results'],
+    'videos' => $LANG_VIDEOS['admin_video_information'],
+    'channels' => $LANG_VIDEOS['admin_channel_information'],
+    'availability' => $LANG_VIDEOS['admin_availability_checks']
 );
-$html .= '<section class="videos-admin-section"><h2>Cache</h2>'
+$html .= '<section class="videos-admin-section"><h2>' . $LANG_VIDEOS['admin_cache_label'] . '</h2>'
     . '<div class="videos-admin-table-wrap">'
     . '<table class="admin-list videos-admin-table"><thead><tr>'
-    . '<th>Cache</th><th>Entrées</th><th>Volume</th>'
-    . '<th>Entrée la plus récente</th></tr></thead><tbody>';
+    . '<th>' . $LANG_VIDEOS['admin_cache_label'] . '</th><th>' . $LANG_VIDEOS['admin_entries'] . '</th><th>' . $LANG_VIDEOS['admin_size'] . '</th>'
+    . '<th>' . $LANG_VIDEOS['admin_latest_entry'] . '</th></tr></thead><tbody>';
 foreach ($cacheLabels as $scope => $label) {
     $item = isset($cacheStatus[$scope]) ? $cacheStatus[$scope] : array();
     $html .= '<tr><td>' . htmlspecialchars($label, ENT_QUOTES, 'UTF-8')
@@ -225,23 +224,23 @@ foreach ($cacheLabels as $scope => $label) {
 }
 $html .= '</tbody></table></div></section>';
 
-$html .= '<section class="videos-admin-section"><h2>Intégration Geeklog</h2>'
+$html .= '<section class="videos-admin-section"><h2>' . $LANG_VIDEOS['admin_geeklog_integration'] . '</h2>'
     . '<div class="videos-integration-grid">'
-    . '<div><strong>Recherche Geeklog</strong><span>Active</span></div>'
-    . '<div><strong>Statistiques Geeklog</strong><span>Actives</span></div>'
-    . '<div><strong>Recherche du catalogue</strong><span>Active</span></div>'
-    . '<div><strong>Interopérabilité ItemInfo</strong><span>Active</span></div>'
+    . '<div><strong>' . $LANG_VIDEOS['admin_geeklog_search'] . '</strong><span>' . $LANG_VIDEOS['admin_active_d2f1'] . '</span></div>'
+    . '<div><strong>' . $LANG_VIDEOS['admin_geeklog_statistics'] . '</strong><span>' . $LANG_VIDEOS['admin_active_1a31'] . '</span></div>'
+    . '<div><strong>' . $LANG_VIDEOS['admin_catalogue_search'] . '</strong><span>' . $LANG_VIDEOS['admin_active_d2f1'] . '</span></div>'
+    . '<div><strong>' . $LANG_VIDEOS['admin_iteminfo_interoperability'] . '</strong><span>' . $LANG_VIDEOS['admin_active_d2f1'] . '</span></div>'
     . '<div><strong>IndexNow</strong><span>'
-    . (function_exists('send_to_indexnow') ? 'Disponible' : 'Indisponible')
+    . (function_exists('send_to_indexnow') ? $LANG_VIDEOS['admin_available'] : $LANG_VIDEOS['admin_unavailable'])
     . '</span></div>'
     . '</div>'
-    . '<details class="videos-advanced-field"><summary>Informations développeur</summary>'
+    . '<details class="videos-advanced-field"><summary>' . $LANG_VIDEOS['admin_developer_information'] . '</summary>'
     . '<p><code>plugin_searchtypes_videos()</code> · <code>plugin_dopluginsearch_videos()</code><br>'
     . '<code>plugin_statssummary_videos()</code> · <code>plugin_showstats_videos()</code><br>'
     . '<code>plugin_getiteminfo_videos()</code> · <code>plugin_idtourl_videos()</code></p>'
     . '</details></section>';
 
-$html .= '<section class="videos-admin-section"><h2>SEO vidéo</h2>';
+$html .= '<section class="videos-admin-section"><h2>' . $LANG_VIDEOS['admin_video_seo_c7b7'] . '</h2>';
 if ($seoDiagnostic !== '') {
     $checks = array(
         'canonical' => strpos($seoDiagnostic, 'rel="canonical"') !== false,
@@ -253,54 +252,33 @@ if ($seoDiagnostic !== '') {
         'embedUrl' => strpos($seoDiagnostic, '"embedUrl"') !== false
     );
     $allOk = !in_array(false, $checks, true);
-    $html .= '<p><strong>SEO vidéo : ' . ($allOk ? 'OK' : 'À vérifier') . '</strong></p>'
+    $html .= '<p><strong>' . $LANG_VIDEOS['admin_video_seo'] . ($allOk ? $LANG_VIDEOS['admin_status_ok'] : $LANG_VIDEOS['admin_needs_review']) . '</strong></p>'
         . '<ul class="videos-admin-status">';
     foreach ($checks as $label => $ok) {
         $html .= '<li>' . htmlspecialchars($label, ENT_QUOTES, 'UTF-8') . ' : '
-            . ($ok ? 'OK' : 'À vérifier') . '</li>';
+            . ($ok ? $LANG_VIDEOS['admin_status_ok'] : $LANG_VIDEOS['admin_needs_review']) . '</li>';
     }
-    $html .= '</ul><details class="videos-advanced-field"><summary>Diagnostic technique</summary>'
-        . '<p>Vidéo test : <code>'
+    $html .= '</ul><details class="videos-advanced-field"><summary>' . $LANG_VIDEOS['admin_technical_diagnostics'] . '</summary>'
+        . '<p>' . $LANG_VIDEOS['admin_test_video'] . ' : <code>'
         . htmlspecialchars($seoDiagnosticVideoId, ENT_QUOTES, 'UTF-8')
         . '</code></p><pre class="videos-seo-preview"><code>'
         . htmlspecialchars($seoDiagnostic, ENT_QUOTES, 'UTF-8')
         . '</code></pre></details>';
 } else {
-    $html .= '<p>Aucune vidéo disponible pour le diagnostic SEO.</p>';
+    $html .= '<p>' . $LANG_VIDEOS['admin_no_video_available_seo_diagnostics'] . '</p>';
 }
 $html .= '</section>';
 
-$html .= '</div>';
-$html = VIDEOS_localizeAdminText($html);
+$html .= VIDEOS_adminPageClose();
+
 
 echo COM_createHTMLDocument(
     $html,
     array(
-        'pagetitle' => VIDEOS_localizeAdminText('Videos — Statistiques'),
-        'headercode' => videos_stats_header_code()
+        'pagetitle' => $LANG_VIDEOS['admin_title'],
+        'headercode' => VIDEOS_adminHeaderCode()
     )
 );
-
-function videos_stats_nav($configuration, $active)
-{
-    global $LANG_VIDEOS;
-    $base = $configuration['site_admin_url'] . '/plugins/videos/';
-    $items = array(
-        'overview' => array('index.php', $LANG_VIDEOS['admin_nav_overview']),
-        'actions' => array('actions.php', $LANG_VIDEOS['admin_nav_actions']),
-        'stats' => array('stats.php', $LANG_VIDEOS['admin_nav_stats']),
-        'moderation' => array('moderation.php', $LANG_VIDEOS['admin_nav_moderation'])
-    );
-    $html = '<nav class="videos-navigation" aria-label="' . htmlspecialchars($LANG_VIDEOS['admin_navigation'], ENT_QUOTES, 'UTF-8') . '"><ul>';
-    foreach ($items as $key => $item) {
-        $html .= '<li><a href="'
-            . htmlspecialchars($base . $item[0], ENT_QUOTES, 'UTF-8') . '"'
-            . ($key === $active
-                ? ' class="is-active" aria-current="page"' : '') . '>'
-            . htmlspecialchars($item[1], ENT_QUOTES, 'UTF-8') . '</a></li>';
-    }
-    return $html . '</ul></nav>';
-}
 
 function videos_stat_card($label, $value, $detail, $smallValue = false)
 {
@@ -315,25 +293,10 @@ function videos_stat_card($label, $value, $detail, $smallValue = false)
         . '</span></article>';
 }
 
-function videos_stats_header_code()
-{
-    return VIDEOS_adminHeaderCode() . "\n" . '<style>'
-        . '.videos-stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:1rem}'
-        . '.videos-stat-card{display:flex;flex-direction:column;min-height:110px;padding:1rem;border:1px solid rgba(127,127,127,.28);border-radius:.6rem;background:rgba(127,127,127,.055);box-sizing:border-box}'
-        . '.videos-stat-value{font-size:1.8rem;font-weight:700;line-height:1.05;margin-bottom:.45rem;overflow-wrap:anywhere}'
-        . '.videos-stat-value.is-small{font-size:1.05rem;line-height:1.3}'
-        . '.videos-stat-label{font-size:.95rem;line-height:1.25}'
-        . '.videos-stat-detail{margin-top:auto;padding-top:.45rem;font-size:.78rem;line-height:1.3;opacity:.7}'
-        . '.videos-integration-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:1rem}'
-        . '.videos-integration-grid>div{display:flex;flex-direction:column;gap:.35rem;padding:1rem;border:1px solid rgba(127,127,127,.25);border-radius:.55rem}'
-        . '.videos-integration-grid span{font-size:.88rem;line-height:1.4;opacity:.82}'
-        . '</style>';
-}
-
 function videos_stats_date_text($value)
 {
     if (empty($value)) {
-        return VIDEOS_localizeAdminText('Jamais');
+        return $LANG_VIDEOS['admin_never'];
     }
     $timestamp = strtotime((string) $value);
     if ($timestamp !== false && function_exists('COM_getUserDateTimeFormat')) {
@@ -359,5 +322,5 @@ function videos_stats_bytes($bytes)
     if ($bytes >= 1024) {
         return number_format($bytes / 1024, 1, ',', ' ') . ' KiB';
     }
-    return $bytes . ' o';
+    return $bytes . ' ' . $GLOBALS['LANG_VIDEOS']['admin_byte_unit'];
 }

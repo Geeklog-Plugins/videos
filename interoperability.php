@@ -290,6 +290,110 @@ function plugin_getiteminfo_videos($id, $what, $uid = 0, $options = array())
     return $result;
 }
 
+/**
+ * Advertise one native Geeklog syndication source.
+ *
+ * The feed represents the persistent editorial video catalogue only. Transient
+ * discovery results are deliberately excluded.
+ */
+function plugin_getfeednames_videos()
+{
+    return array(
+        array(
+            'id' => 'videos',
+            'name' => VIDEOS_getPublicTitle()
+        )
+    );
+}
+
+/**
+ * Return native Geeklog feed entries from the local editorial corpus.
+ * No YouTube API request is performed while generating a feed.
+ */
+function plugin_getfeedcontent_videos(
+    $feed,
+    &$link,
+    &$update,
+    $feedType = '',
+    $feedVersion = ''
+) {
+    global $_CONF, $_TABLES;
+
+    $link = plugin_idtourl_videos('', 'catalogue');
+    $update = '';
+    $limit = 20;
+    $contentLength = 0;
+    $topic = 'videos';
+
+    if (isset($_TABLES['syndication'])) {
+        $feedId = DB_escapeString((string) $feed);
+        $result = DB_query(
+            "SELECT topic, limits, content_length FROM {$_TABLES['syndication']} "
+            . "WHERE fid = '$feedId'"
+        );
+        if (!DB_error() && DB_numRows($result) > 0) {
+            $row = DB_fetchArray($result);
+            $topic = isset($row['topic']) ? (string) $row['topic'] : 'videos';
+            $limit = isset($row['limits']) ? max(1, min(500, (int) $row['limits'])) : 20;
+            $contentLength = isset($row['content_length'])
+                ? max(0, (int) $row['content_length']) : 0;
+        }
+    }
+
+    if ($topic !== '' && $topic !== 'videos') {
+        return array();
+    }
+
+    $records = plugin_getiteminfo_videos(
+        '*',
+        '*',
+        0,
+        array('limit' => $limit, 'order' => 'modified-desc')
+    );
+    if (!is_array($records)) {
+        return array();
+    }
+
+    $content = array();
+    $updateParts = array();
+    foreach ($records as $record) {
+        if (!is_array($record) || empty($record['id']) ||
+            empty($record['title']) || empty($record['url'])) {
+            continue;
+        }
+        $summary = isset($record['excerpt'])
+            ? trim(strip_tags((string) $record['excerpt'])) : '';
+        if ($contentLength > 0 && strlen($summary) > $contentLength) {
+            if (function_exists('MBYTE_substr')) {
+                $summary = MBYTE_substr($summary, 0, $contentLength);
+            } else {
+                $summary = substr($summary, 0, $contentLength);
+            }
+        }
+        $dateValue = !empty($record['date-modified'])
+            ? $record['date-modified']
+            : (isset($record['date-created']) ? $record['date-created'] : '');
+        $timestamp = $dateValue !== '' ? strtotime($dateValue) : false;
+        if ($timestamp === false) {
+            $timestamp = time();
+        }
+        $author = isset($record['author']) ? (string) $record['author'] : '';
+        $content[] = array(
+            'title' => (string) $record['title'],
+            'summary' => $summary,
+            'link' => (string) $record['url'],
+            'uid' => 0,
+            'author' => $author,
+            'date' => (int) $timestamp,
+            'format' => 'plaintext'
+        );
+        $updateParts[] = (string) $record['id'] . '@' . (string) $timestamp;
+    }
+
+    $update = implode(',', $updateParts);
+    return $content;
+}
+
 function VIDEOS_thumbnailAlt($title, $channel = '')
 {
     $title = trim(strip_tags((string) $title));
@@ -318,6 +422,12 @@ function plugin_autotags_videos($op, $content = '', $autotag = '')
     if (empty($record)) {
         return $content;
     }
+
+    // The header hook runs after content preparation in normal Geeklog page
+    // rendering. Flag the stylesheet only when a valid Videos autotag is
+    // actually replaced.
+    $GLOBALS['_VIDEOS_NEEDS_AUTOTAG_CSS'] = true;
+
     $mode = isset($autotag['parm2']) ? strtolower(trim((string) $autotag['parm2'])) : '';
     $safeUrl = htmlspecialchars($record['url'], ENT_QUOTES, 'UTF-8');
     $safeTitle = htmlspecialchars($record['title'], ENT_QUOTES, 'UTF-8');

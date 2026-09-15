@@ -242,8 +242,46 @@ $GLOBALS['VIDEOS_UPDATES'] = array(
     '0.17.1' => array(
         'next' => '0.18.0',
         'callback' => 'videos_update_0_17_1_to_0_18_0'
+    ),
+    '0.18.0' => array(
+        'next' => '0.19.0',
+        'callback' => 'videos_update_0_18_0_to_0_19_0'
     )
 );
+
+function videos_update_0_18_0_to_0_19_0()
+{
+    global $_CONF;
+
+    // Persistent storage migration is an explicit site-scoped upgrade step.
+    // Normal runtime bootstrap only keeps legacy storage as a compatibility
+    // fallback until this site's upgrade has completed successfully.
+    $bootstrap = new Videos_Bootstrap($_CONF);
+    if (!$bootstrap->isReady()) {
+        COM_errorLog(
+            'Videos upgrade 0.19.0: storage bootstrap is not ready.',
+            1
+        );
+        return false;
+    }
+
+    if (!$bootstrap->migrateLegacyStorage()) {
+        $status = $bootstrap->getMigrationStatus();
+        COM_errorLog(
+            'Videos upgrade 0.19.0: persistent storage migration failed '
+            . '(source=' . $bootstrap->getLegacyDataRoot()
+            . ', destination=' . $bootstrap->getPreferredDataRoot()
+            . ', copied=' . (isset($status['copied']) ? (int) $status['copied'] : 0)
+            . ', skipped=' . (isset($status['skipped']) ? (int) $status['skipped'] : 0)
+            . ', failed=' . (isset($status['failed']) ? (int) $status['failed'] : 0)
+            . '). Legacy data was preserved.',
+            1
+        );
+        return false;
+    }
+
+    return true;
+}
 
 function videos_update_0_17_1_to_0_18_0()
 {
@@ -253,7 +291,8 @@ function videos_update_0_17_1_to_0_18_0()
 
 function videos_update_0_17_0_to_0_17_1()
 {
-    // Loading the plugin already performs the idempotent storage migration.
+    // Storage remains readable in its legacy location. The explicit migration
+    // is performed by the controlled 0.18.0 -> 0.19.0 upgrade step.
     return true;
 }
 

@@ -11,6 +11,7 @@ class Videos_Bootstrap
     private $ready;
     private $dataRoot;
     private $legacyDataRoot;
+    private $preferredDataRoot;
     private $migrationStatus;
 
     public function __construct($geeklogConfig)
@@ -19,6 +20,7 @@ class Videos_Bootstrap
         $this->secret = '';
         $this->dataRoot = '';
         $this->legacyDataRoot = '';
+        $this->preferredDataRoot = '';
         $this->migrationStatus = array(
             'attempted' => false,
             'copied' => 0,
@@ -33,41 +35,36 @@ class Videos_Bootstrap
         $base = rtrim($base, '/\\');
         $this->legacyDataRoot = $base . DIRECTORY_SEPARATOR
             . 'videos' . DIRECTORY_SEPARATOR;
-        $root = $base . '-videos' . DIRECTORY_SEPARATOR;
+
+        $preferredRoot = $base . '-videos' . DIRECTORY_SEPARATOR;
         if (!empty($geeklogConfig['videos_data_path']) &&
             $this->validCustomRoot(
                 $geeklogConfig['videos_data_path'],
                 $base,
                 $geeklogConfig
             )) {
-            $root = rtrim(
+            $preferredRoot = rtrim(
                 $geeklogConfig['videos_data_path'],
                 '/\\'
             ) . DIRECTORY_SEPARATOR;
         }
-        $this->dataRoot = $root;
+        $this->preferredDataRoot = $preferredRoot;
 
-        if (!$this->migrateLegacyData($this->legacyDataRoot, $root)) {
-            // Existing Geeklog installations often grant write permission to
-            // path_data itself but not to its parent directory. In that case
-            // the preferred sibling directory (for example data-videos/) cannot
-            // be created during an upgrade. Keep the plugin operational on the
-            // legacy path instead of making the entire plugin unavailable.
-            // Administrators can later move the data with the repair tools or
-            // configure an explicit writable videos_data_path.
-            if (!is_dir($this->legacyDataRoot) || !is_writable($this->legacyDataRoot)) {
-                return;
-            }
-            $root = $this->legacyDataRoot;
-            $this->dataRoot = $root;
-            $this->migrationStatus['legacy_fallback'] = true;
-        }
+        // Runtime bootstrap must never migrate persistent data implicitly.
+        // If a legacy installation has not completed its explicit upgrade yet,
+        // keep reading and writing the legacy site-scoped directory. A completed
+        // migration marker switches that site to the preferred sibling/custom
+        // directory. Fresh installations use the preferred directory directly.
+        $root = $this->selectRuntimeRoot(
+            $this->legacyDataRoot,
+            $this->preferredDataRoot
+        );
+        $this->dataRoot = $root;
 
         $this->store = new Videos_JsonStore($root, 5242880);
         if (!$this->store->initialize()) {
             return;
         }
-        $this->recordMigrationStatus();
         $this->loadRecordedMigrationStatus();
         if (!$this->loadOrCreateSecret()) {
             return;
@@ -101,9 +98,89 @@ class Videos_Bootstrap
         return $this->legacyDataRoot;
     }
 
+    public function getPreferredDataRoot()
+    {
+        return $this->preferredDataRoot;
+    }
+
     public function getMigrationStatus()
     {
         return $this->migrationStatus;
+    }
+
+    /**
+     * Explicitly migrate the current site's legacy persistent storage.
+     *
+     * This method is intentionally never called by the constructor. It belongs
+     * to the controlled plugin-upgrade path (or an explicit repair operation),
+     * which keeps shared-files multisite deployments safe while individual
+     * sites are upgraded at different times.
+     */
+    public function migrateLegacyStorage()
+    {
+        $source = $this->legacyDataRoot;
+        $destination = $this->preferredDataRoot;
+
+        if ($this->normalizePath($source) ===
+            $this->normalizePath($destination)) {
+            return true;
+        }
+
+        if ($this->migrationAlreadyCompleted($source, $destination)) {
+            return $this->switchToRoot($destination);
+        }
+
+        // Nothing to migrate on a fresh installation. The preferred storage is
+        // already the normal runtime target.
+        if (!is_dir($source)) {
+            if ($this->normalizePath($this->dataRoot) !==
+                $this->normalizePath($destination)) {
+                return $this->switchToRoot($destination);
+            }
+            return true;
+        }
+
+        $this->migrationStatus = array(
+            'attempted' => false,
+            'copied' => 0,
+            'skipped' => 0,
+            'failed' => 0,
+            'legacy_fallback' => false
+        );
+
+        if (!$this->migrateLegacyData($source, $destination) ||
+            !empty($this->migrationStatus['failed'])) {
+            $this->migrationStatus['legacy_fallback'] = true;
+            return false;
+        }
+
+        $oldStore = $this->store;
+        $oldRoot = $this->dataRoot;
+        $oldSecret = $this->secret;
+        $oldReady = $this->ready;
+
+        if (!$this->switchToRoot($destination)) {
+            $this->store = $oldStore;
+            $this->dataRoot = $oldRoot;
+            $this->secret = $oldSecret;
+            $this->ready = $oldReady;
+            $this->migrationStatus['failed']++;
+            $this->migrationStatus['legacy_fallback'] = true;
+            return false;
+        }
+
+        if (!$this->recordMigrationStatus()) {
+            $this->store = $oldStore;
+            $this->dataRoot = $oldRoot;
+            $this->secret = $oldSecret;
+            $this->ready = $oldReady;
+            $this->migrationStatus['failed']++;
+            $this->migrationStatus['legacy_fallback'] = true;
+            return false;
+        }
+
+        $this->migrationStatus['legacy_fallback'] = false;
+        return true;
     }
 
     public function getYouTubeApiKey()
@@ -235,6 +312,56 @@ class Videos_Bootstrap
         return $path;
     }
 
+    private function selectRuntimeRoot($source, $destination)
+    {
+        if ($this->normalizePath($source) ===
+            $this->normalizePath($destination)) {
+            return $destination;
+        }
+
+        if ($this->migrationAlreadyCompleted($source, $destination)) {
+            return $destination;
+        }
+
+        // Shared files may be newer than this site's persisted state. Keep the
+        // legacy source of truth until this site explicitly runs its upgrade.
+        if (is_dir($source)) {
+            $this->migrationStatus['legacy_fallback'] = true;
+            return $source;
+        }
+
+        return $destination;
+    }
+
+    private function switchToRoot($root)
+    {
+        $store = new Videos_JsonStore($root, 5242880);
+        if (!$store->initialize()) {
+            return false;
+        }
+
+        $oldStore = $this->store;
+        $oldRoot = $this->dataRoot;
+        $oldSecret = $this->secret;
+        $oldReady = $this->ready;
+
+        $this->store = $store;
+        $this->dataRoot = $root;
+        $this->secret = '';
+        $this->ready = false;
+
+        if (!$this->loadOrCreateSecret()) {
+            $this->store = $oldStore;
+            $this->dataRoot = $oldRoot;
+            $this->secret = $oldSecret;
+            $this->ready = $oldReady;
+            return false;
+        }
+
+        $this->ready = true;
+        return true;
+    }
+
     private function migrateLegacyData($source, $destination)
     {
         if (!is_dir($source) ||
@@ -252,9 +379,6 @@ class Videos_Bootstrap
         $lockPath = rtrim($destination, '/\\')
             . DIRECTORY_SEPARATOR . '.videos-migration.lock';
         $lock = @fopen($lockPath, 'c+b');
-        // Use a blocking lock. A second request during an upgrade should wait
-        // for the migration rather than treating ordinary lock contention as a
-        // permanent storage failure.
         if ($lock === false || !flock($lock, LOCK_EX)) {
             if (is_resource($lock)) {
                 fclose($lock);
@@ -301,8 +425,7 @@ class Videos_Bootstrap
         }
         flock($lock, LOCK_UN);
         fclose($lock);
-        // Corrupt or unreadable optional files are deliberately left behind.
-        // JsonStore will recreate their safe defaults in the new location.
+
         return true;
     }
 
@@ -400,7 +523,7 @@ class Videos_Bootstrap
         if (empty($this->migrationStatus['attempted']) ||
             !empty($this->migrationStatus['failed']) ||
             !empty($this->migrationStatus['legacy_fallback'])) {
-            return;
+            return false;
         }
         $document = $this->store->createDocument(
             'videos.storage_migration',
@@ -414,11 +537,11 @@ class Videos_Bootstrap
                 'legacy_preserved' => true
             )
         );
-        $this->store->write(
+        return $this->store->write(
             'config/storage-migration.json',
             'videos.storage_migration',
             $document
-        );
+        ) !== false;
     }
 
     private function migrationAlreadyCompleted($source, $destination)
@@ -440,8 +563,7 @@ class Videos_Bootstrap
 
     private function loadRecordedMigrationStatus()
     {
-        if (!empty($this->migrationStatus['attempted']) ||
-            !empty($this->migrationStatus['legacy_fallback'])) {
+        if (!empty($this->migrationStatus['legacy_fallback'])) {
             return;
         }
         $document = $this->store->read(

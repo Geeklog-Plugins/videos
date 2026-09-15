@@ -14,7 +14,7 @@ $bootstrap = new Videos_Bootstrap($_CONF);
 $message = '';
 $searchResults = array();
 if (!$bootstrap->isReady()) {
-    $message = 'Le stockage du plugin Videos est indisponible.';
+    $message = $LANG_VIDEOS['admin_videos_plugin_storage_unavailable'];
 }
 $store = $bootstrap->isReady() ? $bootstrap->getStore() : null;
 $cache = $store ? new Videos_Cache($store) : null;
@@ -29,72 +29,72 @@ $ranking = $store ? new Videos_Ranking(
 
 if ($store && $_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!SEC_checkToken()) {
-        $message = 'Le jeton de sécurité a expiré. Veuillez recommencer.';
+        $message = $LANG_VIDEOS['admin_security_token_has_expired_please_try_again'];
     } else {
         $action = isset($_POST['videos_action']) ? COM_applyFilter($_POST['videos_action']) : '';
         if ($action === 'save_key') {
             $key = isset($_POST['youtube_api_key']) ? trim((string) $_POST['youtube_api_key']) : '';
             $message = $bootstrap->setYouTubeApiKey($key)
-                ? 'La clé YouTube Data API a été enregistrée.'
-                : 'La clé API est invalide.';
+                ? $LANG_VIDEOS['admin_youtube_data_api_key_has_been_saved']
+                : $LANG_VIDEOS['admin_api_key_invalid'];
         } elseif ($action === 'test_search') {
             $query = isset($_POST['test_query']) ? trim(strip_tags((string) $_POST['test_query'])) : '';
             if ($query === '' || strlen($query) > 250) {
-                $message = 'La requête de test est invalide.';
+                $message = $LANG_VIDEOS['admin_test_query_invalid'];
             } else {
                 $searchResults = videos_actions_test_search($bootstrap, $query, $_VIDEOS_CONF);
                 $message = $searchResults === false
-                    ? videos_actions_failure_message($store, $_VIDEOS_CONF, 'La recherche de test a échoué.')
-                    : count($searchResults['video_ids']) . ' vidéo(s) valide(s) trouvée(s).';
+                    ? videos_actions_failure_message($store, $_VIDEOS_CONF, $LANG_VIDEOS['admin_test_search_failed'])
+                    : count($searchResults['video_ids']) . $LANG_VIDEOS['admin_valid_video_s_found'];
             }
         } elseif ($action === 'seed_discovery' && SEC_hasRights('videos.maintenance')) {
             $query = isset($_POST['seed_query']) ? trim(strip_tags((string) $_POST['seed_query'])) : '';
             if ($query === '' || strlen($query) > 250) {
-                $message = 'La requête d’amorçage est invalide.';
+                $message = $LANG_VIDEOS['admin_seed_query_invalid'];
             } else {
                 $result = videos_actions_seed_discovery($bootstrap, $query, $_VIDEOS_CONF);
                 $message = is_array($result) && !empty($result['success'])
-                    ? (int) $result['added'] . ' vidéo(s) ajoutée(s) au réservoir.'
-                    : videos_actions_failure_message($store, $_VIDEOS_CONF, 'L’amorçage du réservoir a échoué.');
+                    ? (int) $result['added'] . $LANG_VIDEOS['admin_video_s_added_reservoir']
+                    : videos_actions_failure_message($store, $_VIDEOS_CONF, $LANG_VIDEOS['admin_reservoir_seeding_failed']);
             }
         } elseif ($action === 'clear_cache' && SEC_hasRights('videos.maintenance')) {
             $scope = isset($_POST['cache_scope']) ? COM_applyFilter($_POST['cache_scope']) : '';
             $result = (new Videos_CacheMaintenance($store))->clear($scope);
             $message = !empty($result['success'])
-                ? (int) $result['deleted'] . ' entrée(s) de cache supprimée(s).'
-                : 'Nettoyage partiel : ' . (int) $result['deleted'] . ' supprimée(s), '
-                    . (int) $result['failed'] . ' échec(s).';
+                ? (int) $result['deleted'] . $LANG_VIDEOS['admin_cache_entrie_s_deleted']
+                : $LANG_VIDEOS['admin_partial_cleanup'] . (int) $result['deleted'] . $LANG_VIDEOS['admin_deleted']
+                    . (int) $result['failed'] . $LANG_VIDEOS['admin_failure_s'];
         } elseif ($action === 'rebuild_ranking' && SEC_hasRights('videos.maintenance')) {
             $count = $ranking->rebuild();
             $message = $count === false
-                ? 'La reconstruction des classements a échoué.'
-                : 'Classements reconstruits : ' . (int) $count . ' vidéo(s) classée(s).';
+                ? $LANG_VIDEOS['admin_ranking_rebuild_failed']
+                : $LANG_VIDEOS['admin_rankings_rebuilt'] . (int) $count . $LANG_VIDEOS['admin_ranked_video_s'];
         } elseif ($action === 'pool_rebuild' && SEC_hasRights('videos.maintenance')) {
             $result = $pool->synchronize($ranking->getGlobal(500), $_VIDEOS_CONF, true);
             $message = $result === false
-                ? 'La reconstruction du catalogue permanent a échoué.'
-                : 'Le catalogue permanent a été reconstruit.';
+                ? $LANG_VIDEOS['admin_permanent_catalogue_rebuild_failed']
+                : $LANG_VIDEOS['admin_permanent_catalogue_has_been_rebuilt'];
         } elseif ($action === 'add_video') {
             $input = isset($_POST['video_input']) ? trim((string) $_POST['video_input']) : '';
             $videoId = videos_admin_extract_video_id($input);
             if ($videoId === '') {
-                $message = 'ID ou URL YouTube invalide.';
+                $message = $LANG_VIDEOS['admin_invalid_youtube_id_url'];
             } else {
                 $video = $cache->getVideo($videoId, true);
                 if (!is_array($video)) {
                     $video = videos_admin_fetch_single_video($bootstrap, $cache, $videoId, $_VIDEOS_CONF);
                 }
                 if (!is_array($video)) {
-                    $message = 'La vidéo est introuvable, privée, non intégrable ou refusée par la politique du plugin.';
+                    $message = $LANG_VIDEOS['admin_video_unavailable_private_not_embeddable_rejected_by'];
                 } elseif ($moderation->isVideoBlocked($videoId)) {
-                    $message = 'Cette vidéo est actuellement bloquée par la modération.';
+                    $message = $LANG_VIDEOS['admin_video_currently_blocked_by_moderation'];
                 } else {
                     $global = $ranking->getGlobal(500);
                     $rankingItem = isset($global[$videoId]) ? $global[$videoId] : array();
                     $saved = $pool->setManualState($videoId, 'added', $rankingItem);
                     $message = $saved
-                        ? 'Vidéo ajoutée au catalogue permanent.'
-                        : 'Impossible d’ajouter la vidéo au catalogue permanent.';
+                        ? $LANG_VIDEOS['admin_video_added_permanent_catalogue']
+                        : $LANG_VIDEOS['admin_unable_add_video_permanent_catalogue'];
                 }
             }
         } elseif (in_array(
@@ -114,8 +114,8 @@ if ($store && $_SERVER['REQUEST_METHOD'] === 'POST') {
             $global = $ranking->getGlobal(500);
             $rankingItem = isset($global[$videoId]) ? $global[$videoId] : array();
             $message = $pool->setManualState($videoId, $stateMap[$action], $rankingItem)
-                ? 'Décision éditoriale enregistrée.'
-                : 'Impossible d’enregistrer cette décision.';
+                ? $LANG_VIDEOS['admin_editorial_decision_saved']
+                : $LANG_VIDEOS['admin_unable_save_decision'];
         } elseif ($action === 'signal_public_pages') {
             $urls = videos_admin_public_urls(
                 $store,
@@ -126,17 +126,17 @@ if ($store && $_SERVER['REQUEST_METHOD'] === 'POST') {
                 $_VIDEOS_CONF
             );
             if (count($urls) === 0) {
-                $message = 'Aucune URL publique Videos à signaler.';
+                $message = $LANG_VIDEOS['admin_no_public_videos_url_submit'];
             } elseif (function_exists('send_to_indexnow')) {
                 $result = send_to_indexnow(
                     $urls,
                     array('item_type' => 'videos', 'event' => 'manual-sync')
                 );
                 $message = $result === false
-                    ? 'Le batch IndexNow n’a pas pu être envoyé.'
-                    : count($urls) . ' URL(s) Videos envoyée(s) à IndexNow en un seul batch.';
+                    ? $LANG_VIDEOS['admin_indexnow_batch_could_not_be_sent']
+                    : count($urls) . $LANG_VIDEOS['admin_videos_url_s_sent_indexnow_one_batch'];
             } else {
-                $message = 'Le plugin IndexNow n’est pas disponible. Aucune fausse création de contenu n’a été émise.';
+                $message = $LANG_VIDEOS['admin_indexnow_plugin_unavailable_no_fake_content_creation'];
             }
         }
     }
@@ -145,30 +145,28 @@ if ($store && $_SERVER['REQUEST_METHOD'] === 'POST') {
 $token = SEC_createToken();
 $records = $pool ? $pool->records() : array('items' => array(), 'excluded' => array());
 
-$html = '<div class="videos-admin"><h1>Videos — Actions</h1>'
-    . videos_admin_section_nav($_CONF, 'actions');
+$html = VIDEOS_adminPageOpen('actions', $LANG_VIDEOS['admin_nav_actions']);
 if ($message !== '') {
-    $message = VIDEOS_localizeAdminText($message);
-    if ($message === VIDEOS_localizeAdminText('Vidéo ajoutée au catalogue permanent.')) {
+    if ($message === $LANG_VIDEOS['admin_video_added_permanent_catalogue']) {
         $html .= '<p class="videos-admin-help"><strong>'
             . htmlspecialchars($message, ENT_QUOTES, 'UTF-8') . '</strong></p>';
     } else {
         $html .= COM_showMessageText($message, '', true);
     }
 }
-$html .= '<section class="videos-admin-section"><h2>Curation vidéo</h2>'
-    . '<p>Ajoutez directement une vidéo par son ID ou son URL YouTube. Elle est récupérée, mise en cache, ajoutée au catalogue permanent puis signalée via les événements Geeklog.</p>'
+$html .= '<section class="videos-admin-section"><h2>' . $LANG_VIDEOS['admin_video_curation'] . '</h2>'
+    . '<p>' . $LANG_VIDEOS['admin_add_video_directly_by_its_youtube_id'] . '</p>'
     . '<form class="videos-admin-form" method="post"><input type="hidden" name="videos_action" value="add_video">'
     . '<input type="hidden" name="' . CSRF_TOKEN . '" value="' . htmlspecialchars($token, ENT_QUOTES, 'UTF-8') . '">'
-    . '<label>ID ou URL YouTube <input type="text" name="video_input" maxlength="500" size="60" placeholder="H5nzrlARuCo ou https://youtu.be/…" required></label> '
-    . '<button type="submit">Ajouter au catalogue permanent</button></form></section>';
+    . '<label>' . $LANG_VIDEOS['admin_youtube_id_url'] . ' <input type="text" name="video_input" maxlength="500" size="60" placeholder="H5nzrlARuCo' . $LANG_VIDEOS['admin_https_youtu_be'] . '" required></label> '
+    . '<button type="submit">' . $LANG_VIDEOS['admin_add_permanent_catalogue'] . '</button></form></section>';
 
-$html .= '<section class="videos-admin-section"><h2>Catalogue permanent</h2>';
+$html .= '<section class="videos-admin-section"><h2>' . $LANG_VIDEOS['admin_permanent_catalogue'] . '</h2>';
 if (empty($records['items'])) {
-    $html .= '<p>Aucune vidéo conservée.</p>';
+    $html .= '<p>' . $LANG_VIDEOS['admin_no_retained_video'] . '</p>';
 } else {
     $html .= '<div class="videos-admin-table-wrap"><table class="admin-list videos-admin-table"><thead><tr>'
-        . '<th>Vidéo</th><th>État</th><th>Actions</th></tr></thead><tbody>';
+        . '<th>' . $LANG_VIDEOS['admin_video'] . '</th><th>' . $LANG_VIDEOS['admin_status_db27'] . '</th><th>' . $LANG_VIDEOS['admin_actions_column'] . '</th></tr></thead><tbody>';
     foreach ($records['items'] as $videoId => $item) {
         $video = $cache->getVideo($videoId, true);
         $title = is_array($video) && !empty($video['snippet']['title'])
@@ -177,48 +175,48 @@ if (empty($records['items'])) {
         $html .= '<tr><td><a href="' . htmlspecialchars(plugin_idtourl_videos('', $videoId), ENT_QUOTES, 'UTF-8') . '">'
             . htmlspecialchars($title, ENT_QUOTES, 'UTF-8') . '</a><br><code>'
             . htmlspecialchars($videoId, ENT_QUOTES, 'UTF-8') . '</code></td><td>'
-            . ($isPinned ? 'Épinglée' : 'Permanente') . '</td><td>';
+            . ($isPinned ? $LANG_VIDEOS['admin_pinned'] : $LANG_VIDEOS['admin_permanent']) . '</td><td>';
         $html .= $isPinned
-            ? videos_admin_action_form('pool_unpin', $videoId, 'Désépingler', $token)
-            : videos_admin_action_form('pool_pin', $videoId, 'Épingler', $token);
-        $html .= videos_admin_action_form('pool_remove', $videoId, 'Retirer de la sélection', $token)
-            . videos_admin_action_form('pool_exclude', $videoId, 'Exclure des sélections futures', $token)
+            ? videos_admin_action_form('pool_unpin', $videoId, $LANG_VIDEOS['admin_unpin'], $token)
+            : videos_admin_action_form('pool_pin', $videoId, $LANG_VIDEOS['admin_pin'], $token);
+        $html .= videos_admin_action_form('pool_remove', $videoId, $LANG_VIDEOS['admin_remove_from_selection'], $token)
+            . videos_admin_action_form('pool_exclude', $videoId, $LANG_VIDEOS['admin_exclude_from_future_selections'], $token)
             . '</td></tr>';
     }
     $html .= '</tbody></table></div>'
-        . '<p class="videos-admin-help"><strong>Retirer de la sélection</strong> enlève la vidéo du catalogue permanent, mais elle pourra être sélectionnée de nouveau. '
-        . '<strong>Exclure des sélections futures</strong> l’empêche d’être réintégrée tant qu’elle n’est pas réautorisée.</p>';
+        . '<p class="videos-admin-help"><strong>' . $LANG_VIDEOS['admin_remove_from_selection'] . '</strong> ' . $LANG_VIDEOS['admin_remove_help'] . ' '
+        . '<strong>' . $LANG_VIDEOS['admin_exclude_from_future_selections'] . '</strong> ' . $LANG_VIDEOS['admin_exclude_help'] . '</p>';
 }
 if (!empty($records['excluded'])) {
-    $html .= '<details class="videos-advanced-field"><summary>Vidéos exclues du fonds ('
+    $html .= '<details class="videos-advanced-field"><summary>' . $LANG_VIDEOS['admin_videos_excluded_from_pool'] . ' ('
         . count($records['excluded']) . ')</summary><ul>';
     foreach ($records['excluded'] as $videoId => $excludedAt) {
         $html .= '<li><code>' . htmlspecialchars($videoId, ENT_QUOTES, 'UTF-8') . '</code> '
-            . videos_admin_action_form('pool_allow', $videoId, 'Réautoriser', $token) . '</li>';
+            . videos_admin_action_form('pool_allow', $videoId, $LANG_VIDEOS['admin_allow_again'], $token) . '</li>';
     }
     $html .= '</ul></details>';
 }
 if (SEC_hasRights('videos.maintenance')) {
     $html .= '<form class="videos-admin-form" method="post"><input type="hidden" name="videos_action" value="pool_rebuild">'
         . '<input type="hidden" name="' . CSRF_TOKEN . '" value="' . htmlspecialchars($token, ENT_QUOTES, 'UTF-8') . '">'
-        . '<button type="submit">Reconstruire le catalogue permanent</button></form>';
+        . '<button type="submit">' . $LANG_VIDEOS['admin_rebuild_permanent_catalogue'] . '</button></form>';
 }
 $html .= '</section>';
 
 $youtubeApiKeyConfigured = $bootstrap->getYouTubeApiKey() !== '';
 $html .= '<section class="videos-admin-section"><h2>YouTube Data API</h2>'
-    . '<p><strong>État :</strong> ' . ($youtubeApiKeyConfigured ? 'Clé API configurée.' : 'Clé API absente.') . '</p>';
+    . '<p><strong>' . $LANG_VIDEOS['admin_status'] . '</strong> ' . ($youtubeApiKeyConfigured ? $LANG_VIDEOS['admin_api_key_configured'] : $LANG_VIDEOS['admin_api_key_missing']) . '</p>';
 if (!$youtubeApiKeyConfigured) {
-    $html .= '<p>Une clé YouTube Data API est nécessaire pour rechercher de nouvelles vidéos et récupérer les données d’une vidéo qui n’est pas encore en cache. Les vidéos déjà mises en cache restent consultables sans nouvel appel API.</p>';
+    $html .= '<p>' . $LANG_VIDEOS['admin_youtube_data_api_key_required_search_new'] . '</p>';
 }
 $html .= '<form class="videos-admin-form" method="post"><input type="hidden" name="videos_action" value="save_key">'
     . '<input type="hidden" name="' . CSRF_TOKEN . '" value="' . htmlspecialchars($token, ENT_QUOTES, 'UTF-8') . '">'
-    . '<label>' . ($youtubeApiKeyConfigured ? 'Remplacer la clé API' : 'Ajouter une clé API') . ' <input type="password" name="youtube_api_key" maxlength="200" autocomplete="new-password"></label> '
-    . '<button type="submit">' . ($youtubeApiKeyConfigured ? 'Remplacer la clé' : 'Enregistrer la clé') . '</button></form>'
+    . '<label>' . ($youtubeApiKeyConfigured ? $LANG_VIDEOS['admin_replace_api_key'] : $LANG_VIDEOS['admin_add_api_key']) . ' <input type="password" name="youtube_api_key" maxlength="200" autocomplete="new-password"></label> '
+    . '<button type="submit">' . ($youtubeApiKeyConfigured ? $LANG_VIDEOS['admin_replace_key'] : $LANG_VIDEOS['admin_save_key']) . '</button></form>'
     . '<form class="videos-admin-form" method="post"><input type="hidden" name="videos_action" value="test_search">'
     . '<input type="hidden" name="' . CSRF_TOKEN . '" value="' . htmlspecialchars($token, ENT_QUOTES, 'UTF-8') . '">'
-    . '<label>Recherche de test <input type="text" name="test_query" maxlength="250" size="50" required></label> '
-    . '<button type="submit">Tester la recherche</button></form>';
+    . '<label>' . $LANG_VIDEOS['admin_test_search'] . ' <input type="text" name="test_query" maxlength="250" size="50" required></label> '
+    . '<button type="submit">' . $LANG_VIDEOS['admin_test_search_8cfd'] . '</button></form>';
 if (is_array($searchResults) && !empty($searchResults['videos'])) {
     $html .= '<div class="videos-grid videos-admin-results">';
     foreach ($searchResults['videos'] as $videoId => $video) {
@@ -232,38 +230,40 @@ if (is_array($searchResults) && !empty($searchResults['videos'])) {
 if (SEC_hasRights('videos.maintenance')) {
     $html .= '<form class="videos-admin-form" method="post"><input type="hidden" name="videos_action" value="seed_discovery">'
         . '<input type="hidden" name="' . CSRF_TOKEN . '" value="' . htmlspecialchars($token, ENT_QUOTES, 'UTF-8') . '">'
-        . '<label>Requête d’amorçage <input type="text" name="seed_query" maxlength="250" size="50" required></label> '
-        . '<button type="submit">Amorcer le réservoir</button></form>';
+        . '<label>' . $LANG_VIDEOS['admin_seed_query'] . ' <input type="text" name="seed_query" maxlength="250" size="50" required></label> '
+        . '<button type="submit">' . $LANG_VIDEOS['admin_seed_reservoir'] . '</button></form>';
 }
 $html .= '</section>';
 
 if (SEC_hasRights('videos.maintenance')) {
-    $html .= '<section class="videos-admin-section"><h2>Maintenance</h2>'
+    $html .= '<section class="videos-admin-section"><h2>' . $LANG_VIDEOS['admin_maintenance'] . '</h2>'
         . '<form class="videos-admin-form" method="post"><input type="hidden" name="videos_action" value="rebuild_ranking">'
         . '<input type="hidden" name="' . CSRF_TOKEN . '" value="' . htmlspecialchars($token, ENT_QUOTES, 'UTF-8') . '">'
-        . '<button type="submit">Reconstruire les classements</button></form>'
+        . '<button type="submit">' . $LANG_VIDEOS['admin_rebuild_rankings'] . '</button></form>'
         . '<form class="videos-admin-form" method="post"><input type="hidden" name="videos_action" value="clear_cache">'
         . '<input type="hidden" name="' . CSRF_TOKEN . '" value="' . htmlspecialchars($token, ENT_QUOTES, 'UTF-8') . '">'
-        . '<label>Cache <select name="cache_scope"><option value="search">Recherches</option><option value="videos">Vidéos</option>'
-        . '<option value="channels">Chaînes</option><option value="availability">Disponibilité</option><option value="all">Tous</option></select></label> '
-        . '<button type="submit">Vider le cache</button></form>'
-        . '<p><a href="' . htmlspecialchars($_CONF['site_admin_url'] . '/plugins/videos/repair.php', ENT_QUOTES, 'UTF-8') . '">Outils de réparation</a></p></section>';
+        . '<label>' . $LANG_VIDEOS['admin_cache_label'] . ' <select name="cache_scope"><option value="search">' . $LANG_VIDEOS['admin_searches'] . '</option><option value="videos">' . $LANG_VIDEOS['admin_videos'] . '</option>'
+        . '<option value="channels">' . $LANG_VIDEOS['admin_channels'] . '</option><option value="availability">' . $LANG_VIDEOS['admin_availability'] . '</option><option value="all">' . $LANG_VIDEOS['admin_all'] . '</option></select></label> '
+        . '<button type="submit">' . $LANG_VIDEOS['admin_clear_cache'] . '</button></form>'
+        . '<p><a href="' . htmlspecialchars($_CONF['site_admin_url'] . '/plugins/videos/repair.php', ENT_QUOTES, 'UTF-8') . '">' . $LANG_VIDEOS['admin_repair_tools'] . '</a></p></section>';
 }
 
 if (function_exists('send_to_indexnow')) {
-    $html .= '<section class="videos-admin-section"><h2>Indexation des pages existantes</h2>'
-        . '<p>Le rattrapage inventorie les pages publiques et les envoie à IndexNow en mode batch.</p>'
+    $html .= '<section class="videos-admin-section"><h2>' . $LANG_VIDEOS['admin_index_existing_pages'] . '</h2>'
+        . '<p>' . $LANG_VIDEOS['admin_catch_up_process_inventories_public_pages_sends'] . '</p>'
         . '<form method="post"><input type="hidden" name="videos_action" value="signal_public_pages">'
         . '<input type="hidden" name="' . CSRF_TOKEN . '" value="' . htmlspecialchars($token, ENT_QUOTES, 'UTF-8') . '">'
-        . '<button type="submit">Envoyer les pages existantes à IndexNow</button></form></section>';
+        . '<button type="submit">' . $LANG_VIDEOS['admin_send_existing_pages_indexnow'] . '</button></form></section>';
 }
-$html .= '</div>';
+$html .= VIDEOS_adminPageClose();
 
-$html = VIDEOS_localizeAdminText($html);
-echo COM_createHTMLDocument($html, array('pagetitle' => VIDEOS_localizeAdminText('Videos — Actions'), 'headercode' => VIDEOS_adminHeaderCode()));
+
+echo COM_createHTMLDocument($html, array('pagetitle' => $LANG_VIDEOS['admin_title'], 'headercode' => VIDEOS_adminHeaderCode()));
 
 function videos_actions_failure_message($store, $configuration, $prefix)
 {
+    global $LANG_VIDEOS;
+
     $status = (new Videos_Quota($store))->status();
     $data = isset($status['data']) && is_array($status['data']) ? $status['data'] : array();
     $counts = isset($data['counts']) && is_array($data['counts']) ? $data['counts'] : array();
@@ -272,17 +272,17 @@ function videos_actions_failure_message($store, $configuration, $prefix)
         ? max(0, (int) $configuration['youtube_daily_search_limit']) : 20;
     if (!empty($data['suspended'])) {
         $code = !empty($data['last_error']['code']) ? (string) $data['last_error']['code'] : 'quota';
-        return $prefix . ' Le quota YouTube est suspendu (' . $code . ').';
+        return $prefix . ' ' . $LANG_VIDEOS['admin_youtube_quota_suspended'] . $code . ').';
     }
     if ($limit > 0 && $count >= $limit) {
-        return $prefix . ' La limite locale de recherches YouTube est atteinte ('
-            . $count . '/' . $limit . ' aujourd’hui).';
+        return $prefix . ' ' . $LANG_VIDEOS['admin_local_youtube_search_limit_has_been_reached']
+            . $count . '/' . $limit . $LANG_VIDEOS['admin_today'];
     }
     if (!empty($data['last_error']['code'])) {
-        return $prefix . ' Dernière erreur YouTube : ' . (string) $data['last_error']['code']
-            . '. Consultez Statistiques > Activité YouTube API.';
+        return $prefix . ' ' . $LANG_VIDEOS['admin_last_youtube_error'] . (string) $data['last_error']['code']
+            . '. ' . $LANG_VIDEOS['admin_consult'] . ' ' . $LANG_VIDEOS['admin_statistics'] . ' > ' . $LANG_VIDEOS['admin_youtube_api_activity'] . '.';
     }
-    return $prefix . ' Consultez Statistiques > Activité YouTube API pour le diagnostic.';
+    return $prefix . ' ' . $LANG_VIDEOS['admin_see_statistics_youtube_api_activity_diagnostics'];
 }
 
 function videos_actions_test_search($bootstrap, $query, $configuration)
@@ -511,21 +511,3 @@ function videos_admin_action_form($action, $videoId, $label, $token)
         . htmlspecialchars($label, ENT_QUOTES, 'UTF-8') . '</button></form>';
 }
 
-function videos_admin_section_nav($configuration, $active)
-{
-    global $LANG_VIDEOS;
-    $base = $configuration['site_admin_url'] . '/plugins/videos/';
-    $items = array(
-        'overview' => array('index.php', $LANG_VIDEOS['admin_nav_overview']),
-        'actions' => array('actions.php', $LANG_VIDEOS['admin_nav_actions']),
-        'stats' => array('stats.php', $LANG_VIDEOS['admin_nav_stats']),
-        'moderation' => array('moderation.php', $LANG_VIDEOS['admin_nav_moderation'])
-    );
-    $html = '<nav class="videos-navigation" aria-label="' . htmlspecialchars($LANG_VIDEOS['admin_navigation'], ENT_QUOTES, 'UTF-8') . '"><ul>';
-    foreach ($items as $key => $item) {
-        $html .= '<li><a href="' . htmlspecialchars($base . $item[0], ENT_QUOTES, 'UTF-8') . '"'
-            . ($key === $active ? ' class="is-active" aria-current="page"' : '') . '>'
-            . htmlspecialchars($item[1], ENT_QUOTES, 'UTF-8') . '</a></li>';
-    }
-    return $html . '</ul></nav>';
-}

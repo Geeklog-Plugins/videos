@@ -1,0 +1,121 @@
+/* Videos autotags: loaded only when a [videos:...] tag is rendered. */
+
+.videos-autotag-card {
+    display: block;
+    width: 100%;
+    max-width: 640px;
+    margin: 1.25rem auto;
+    overflow: hidden;
+    border: 1px solid rgba(127, 127, 127, .3);
+    border-radius: .55rem;
+    background: rgba(127, 127, 127, .04);
+    box-sizing: border-box;
+}
+
+.videos-autotag-card > a {
+    position: relative;
+    display: block;
+    color: inherit;
+    text-decoration: none;
+}
+
+/*
+ * The overlay covers the thumbnail only (16:9), not the title below it.
+ * The play button is drawn as a centered SVG background so its position is
+ * independent of the title height.
+ */
+.videos-autotag-card > a::before {
+    content: "";
+    position: absolute;
+    z-index: 2;
+    top: 0;
+    left: 0;
+    display: block;
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    pointer-events: none;
+    background-color: transparent;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='42' height='30' viewBox='0 0 42 30'%3E%3Crect width='42' height='30' rx='8' fill='%23cc0000' fill-opacity='.92'/%3E%3Cpath d='M18 9l10 6-10 6z' fill='white'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: 42px 30px;
+    filter: drop-shadow(0 2px 3px rgba(0, 0, 0, .22));
+    transition: filter .16s ease, background-size .16s ease;
+}
+
+.videos-autotag-card img {
+    display: block;
+    width: 100%;
+    height: auto;
+    aspect-ratio: 16 / 9;
+    object-fit: cover;
+    transition: filter .18s ease, transform .18s ease;
+}
+
+.videos-autotag-card span {
+    display: block;
+    padding: .85rem 1rem;
+    overflow-wrap: anywhere;
+    font-size: 1rem;
+    font-weight: 600;
+    line-height: 1.4;
+}
+
+.videos-autotag-card > a:hover::before,
+.videos-autotag-card > a:focus::before {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='42' height='30' viewBox='0 0 42 30'%3E%3Crect width='42' height='30' rx='8' fill='%23b80000'/%3E%3Cpath d='M18 9l10 6-10 6z' fill='white'/%3E%3C/svg%3E");
+    background-size: 44px 31px;
+    filter: drop-shadow(0 3px 4px rgba(0, 0, 0, .26));
+}
+
+.videos-autotag-card > a:hover img,
+.videos-autotag-card > a:focus img {
+    filter: brightness(.82);
+    transform: scale(1.01);
+}
+
+.videos-autotag-card > a:hover span,
+.videos-autotag-card > a:focus span {
+    text-decoration: underline;
+}
+
+.videos-autotag-player {
+    width: 100%;
+    max-width: 800px;
+    margin: 1.25rem auto;
+}
+
+.videos-autotag-player iframe {
+    display: block;
+    width: 100%;
+    height: auto;
+    aspect-ratio: 16 / 9;
+    border: 0;
+}
+
+.videos-autotag-player p {
+    margin: .65rem 0 0;
+}
+
+.videos-autotag-player a {
+    color: inherit;
+}
+
+@media (max-width: 600px) {
+    .videos-autotag-card,
+    .videos-autotag-player {
+        max-width: 100%;
+        margin: 1rem 0;
+    }
+
+    .videos-autotag-card > a::before {
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='28' viewBox='0 0 40 28'%3E%3Crect width='40' height='28' rx='7' fill='%23cc0000' fill-opacity='.92'/%3E%3Cpath d='M17 8l10 6-10 6z' fill='white'/%3E%3C/svg%3E");
+        background-size: 40px 28px;
+    }
+
+    .videos-autotag-card > a:hover::before,
+    .videos-autotag-card > a:focus::before {
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='28' viewBox='0 0 40 28'%3E%3Crect width='40' height='28' rx='7' fill='%23b80000'/%3E%3Cpath d='M17 8l10 6-10 6z' fill='white'/%3E%3C/svg%3E");
+        background-size: 42px 29px;
+    }
+}

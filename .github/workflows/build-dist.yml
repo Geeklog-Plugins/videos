@@ -4,52 +4,164 @@ on:
   workflow_dispatch:
   push:
     branches:
-      - 0.18.0
+      - 0.19.0
     paths-ignore:
       - 'dist/**'
 
 permissions:
   contents: write
 
-concurrency:
-  group: videos-dist-${{ github.ref }}
-  cancel-in-progress: true
-
 jobs:
   build-dist:
     runs-on: ubuntu-latest
-
     steps:
       - name: Check out source
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           fetch-depth: 0
 
       - name: Synchronize branch
+        run: git pull --ff-only origin "${GITHUB_REF_NAME}"
+
+      - name: Validate admin UI and language architecture
         shell: bash
         run: |
           set -euo pipefail
-          git pull --ff-only origin "${GITHUB_REF_NAME}"
+          grep -Fq 'function VIDEOS_adminNavigation($active)' functions.inc
+          grep -Fq 'function VIDEOS_adminPageOpen($active, $pageTitle)' functions.inc
+          grep -Fq 'function VIDEOS_adminPageClose()' functions.inc
+          grep -Fq 'VIDEOS ADMIN UNIFIED UI 0.19.0' public_html/css/admin.css
+          for file in admin/index.php admin/actions.php admin/stats.php admin/moderation.php; do
+            grep -Fq 'VIDEOS_adminPageOpen(' "$file"
+            grep -Fq 'VIDEOS_adminPageClose()' "$file"
+            grep -Fq '$LANG_VIDEOS[' "$file"
+          done
+          if grep -R -nF '{{videos_admin_' admin; then
+            echo 'Unresolved Videos admin language token found.' >&2
+            exit 1
+          fi
+          if grep -R -nE 'videos_(overview_nav|admin_section_nav|stats_nav|moderation_nav)\(' admin; then
+            echo 'Legacy per-page navigation helper found.' >&2
+            exit 1
+          fi
+          if grep -R -nE "text_[0-9a-f]{12}|VIDEOS_adminText\(|VIDEOS_localizeAdminText\(" \
+              admin/index.php admin/actions.php admin/stats.php admin/moderation.php functions.inc; then
+            echo 'Legacy hashed admin language reference remains.' >&2
+            exit 1
+          fi
+          if grep -R -nE 'LANG_VIDEOS_ADMIN(_TEXT)?|text_[0-9a-f]{12}' \
+              language/english.php language/french_france.php; then
+            echo 'Legacy admin language table remains.' >&2
+            exit 1
+          fi
+
+      - name: Validate semantic admin language keys
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          admin_files = [Path('admin/index.php'), Path('admin/actions.php'), Path('admin/stats.php'), Path('admin/moderation.php')]
+          lang_files = [Path('language/english.php'), Path('language/french_france.php')]
+          used = set()
+          for path in admin_files:
+              used.update(re.findall(r"\$LANG_VIDEOS\['(admin_[A-Za-z0-9_]+)'\]", path.read_text(encoding='utf-8')))
+          if not used:
+              raise SystemExit('No semantic admin language keys found.')
+          for path in lang_files:
+              text = path.read_text(encoding='utf-8')
+              defined = set(re.findall(r"\$LANG_VIDEOS\['(admin_[A-Za-z0-9_]+)'\]\s*=", text))
+              defined.update(re.findall(r"'(admin_[A-Za-z0-9_]+)'\s*=>", text))
+              missing = sorted(used - defined)
+              if missing:
+                  raise SystemExit(f'{path}: missing semantic admin keys: {", ".join(missing)}')
+          print(f'Validated {len(used)} semantic admin language keys in English and French.')
+          PY
+
+      - name: Validate storage upgrade
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -Fq 'public function migrateLegacyStorage()' classes/Videos_Bootstrap.php
+          grep -Fq 'private function selectRuntimeRoot(' classes/Videos_Bootstrap.php
+          grep -Fq '$bootstrap->migrateLegacyStorage()' install_updates.php
+          grep -Fq 'Legacy data was preserved.' install_updates.php
+          if grep -Fq '$this->migrateLegacyData($this->legacyDataRoot' classes/Videos_Bootstrap.php; then
+            echo 'Runtime bootstrap still performs implicit storage migration.' >&2
+            exit 1
+          fi
+
+      - name: Validate lifecycle events
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -Fq '$this->signalDeleted($videoId);' classes/Videos_PermanentPool.php
+          grep -Fq 'foreach ($previousItems as $videoId => $item)' classes/Videos_PermanentPool.php
+          grep -Fq '$this->signalChannelVideos($channelId, $afterExcluded);' classes/Videos_Moderation.php
+          grep -Fq "function_exists('PLG_itemDeleted')" classes/Videos_Moderation.php
+          grep -Fq "function_exists('PLG_itemDeleted')" classes/Videos_PermanentPool.php
+
+      - name: Validate native integrations
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -Fq "plugins/videos/geeklog_integration.php" functions.inc
+          grep -Fq "plugins/videos/interoperability.php" functions.inc
+          grep -Fq 'function plugin_getfeednames_videos()' interoperability.php
+          grep -Fq 'function plugin_getfeedcontent_videos(' interoperability.php
+          grep -Fq "'config.videos.tab_seo'" autoinstall.php
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          text = Path('autoinstall.php').read_text(encoding='utf-8')
+          install = text.split('$features = array(', 1)[1].split(');', 1)[0]
+          uninstall = text.split("'features' => array(", 1)[1].split(')', 1)[0]
+          installed = set(re.findall(r"'((?:videos|config\.videos)\.[^']+)'", install))
+          removed = set(re.findall(r"'((?:videos|config\.videos)\.[^']+)'", uninstall))
+          missing = sorted(installed - removed)
+          if missing:
+              raise SystemExit('Uninstall misses features: ' + ', '.join(missing))
+          print(f'Validated uninstall symmetry for {len(installed)} features.')
+          PY
 
       - name: Lint PHP sources
+        id: lint
         shell: bash
         run: |
-          set -euo pipefail
+          set +e
+          : > lint-report.txt
+          status=0
           while IFS= read -r -d '' file; do
-            php -l "$file" >/dev/null
-          done < <(find . -type f \( -name '*.php' -o -name '*.inc' \) \
-            -not -path './.git/*' -not -path './dist/*' -print0)
+            output=$(php -l "$file" 2>&1)
+            code=$?
+            if [ "$code" -ne 0 ]; then
+              status=1
+              printf '%s\n%s\n\n' "$file" "$output" >> lint-report.txt
+            fi
+          done < <(find . -type f \( -name '*.php' -o -name '*.inc' \) -not -path './.git/*' -not -path './dist/*' -print0)
+          if [ "$status" -ne 0 ]; then
+            cat lint-report.txt
+            exit 1
+          fi
+          rm -f lint-report.txt
+
+      - name: Upload lint diagnostics
+        if: failure() && steps.lint.outcome == 'failure'
+        uses: actions/upload-artifact@v4
+        with:
+          name: videos-lint-report
+          path: lint-report.txt
+          if-no-files-found: ignore
 
       - name: Build installable ZIP
         shell: bash
         run: |
           set -euo pipefail
-
-          ARCHIVE="videos_0.18.0_2.1.1.zip"
+          ARCHIVE="videos_0.19.0_2.1.1.zip"
           rm -rf build
           mkdir -p build/videos dist
           rm -f dist/videos_*.zip
-
           rsync -a ./ build/videos/ \
             --exclude='.git/' \
             --exclude='.github/' \
@@ -66,48 +178,30 @@ jobs:
             --exclude='*.log' \
             --exclude='*.tmp' \
             --exclude='*.cache' \
-            --exclude='videos_*.tar.gz' \
             --exclude='videos_*.zip'
-
           cd build
           zip -q -r "../dist/${ARCHIVE}" videos
           cd ..
-
-          test -s "dist/${ARCHIVE}"
           unzip -t "dist/${ARCHIVE}"
+          unzip -p "dist/${ARCHIVE}" videos/functions.inc | grep -Fq 'function VIDEOS_adminPageOpen'
+          unzip -p "dist/${ARCHIVE}" videos/functions.inc | grep -Fq 'plugins/videos/interoperability.php'
+          unzip -p "dist/${ARCHIVE}" videos/interoperability.php | grep -Fq 'function plugin_getfeednames_videos()'
+          unzip -p "dist/${ARCHIVE}" videos/interoperability.php | grep -Fq 'function plugin_getfeedcontent_videos('
+          unzip -p "dist/${ARCHIVE}" videos/autoinstall.php | grep -Fq "'config.videos.tab_seo'"
+          if unzip -p "dist/${ARCHIVE}" videos/admin/actions.php | grep -Eq 'text_[0-9a-f]{12}|VIDEOS_adminText\('; then
+            echo 'Legacy admin language reference found in archive.' >&2
+            exit 1
+          fi
 
-          # Geeklog 2.2.2 rejects archive entries with unsafe names.
-          # Keep package paths ASCII-only and reject hidden path components.
-          while IFS= read -r entry; do
-            case "$entry" in
-              */) continue ;;
-            esac
-            if printf '%s' "$entry" | grep -qE '(^|/)\.'; then
-              echo "Unsafe hidden archive entry: $entry" >&2
-              exit 1
-            fi
-            if ! printf '%s' "$entry" | grep -qE '^[A-Za-z0-9_./-]+$'; then
-              echo "Unsafe archive filename: $entry" >&2
-              exit 1
-            fi
-          done < <(zipinfo -1 "dist/${ARCHIVE}")
-
-          unzip -l "dist/${ARCHIVE}" | head -80
-
-      - name: Commit generated archive
+      - name: Commit archive
         shell: bash
         run: |
           set -euo pipefail
-
-          ARCHIVE="videos_0.18.0_2.1.1.zip"
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -A dist
-
+          git add dist
           if git diff --cached --quiet; then
-            echo "Archive is already up to date."
             exit 0
           fi
-
-          git commit -m "Build ${ARCHIVE}"
+          git commit -m "Rebuild Videos 0.19.0 archive"
           git push origin "HEAD:${GITHUB_REF_NAME}"

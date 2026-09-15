@@ -178,6 +178,7 @@ function plugin_autouninstall_videos()
             'config.videos.tab_ranking',
             'config.videos.tab_privacy',
             'config.videos.tab_block',
+            'config.videos.tab_seo',
             'config.videos.tab_maintenance'
         ),
         'php_blocks' => array(),
