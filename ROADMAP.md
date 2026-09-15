@@ -50,16 +50,6 @@ require_once 'interoperability.php';
 
 The test should fail on duplicate global Plugin API callbacks or other fatal integration-load conflicts.
 
-#### Keep upgrade testing in a valid Geeklog state
-
-A `Directory not empty` warning observed during a Geeklog 2.1.1 plugin upload was caused by manually deleting `plugins/videos` before starting the upgrade while the corresponding public plugin directory still existed.
-
-This left Geeklog's upgrade mechanism in an inconsistent filesystem state: Geeklog could no longer perform its normal sequence of renaming the existing plugin/public/admin directories to `.previous` before moving the new archive into place.
-
-This is therefore not considered a Videos packaging defect.
-
-Upgrade tests should preserve the installed plugin directory structure and let Geeklog perform its own backup/rename sequence.
-
 ### Release gate
 
 0.19.0 is ready for release when:
